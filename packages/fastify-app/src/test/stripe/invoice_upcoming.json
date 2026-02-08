@@ -1,0 +1,45 @@
+{
+  "id": "evt_1TestInvoiceUpcoming",
+  "object": "event",
+  "api_version": "2020-03-02",
+  "created": 1642649111,
+  "data": {
+    "object": {
+      "object": "invoice",
+      "account_country": "US",
+      "amount_due": 10000,
+      "amount_paid": 0,
+      "amount_remaining": 10000,
+      "attempt_count": 0,
+      "attempted": false,
+      "billing_reason": "upcoming",
+      "collection_method": "charge_automatically",
+      "created": 1642645471,
+      "currency": "usd",
+      "customer": "cus_JsuO3bmrj0QlAw",
+      "lines": {
+        "object": "list",
+        "data": [],
+        "has_more": false,
+        "total_count": 0,
+        "url": "/v1/invoices/upcoming/lines"
+      },
+      "livemode": false,
+      "metadata": {},
+      "paid": false,
+      "period_end": 1645323680,
+      "period_start": 1642645280,
+      "status": "draft",
+      "subscription": "sub_JsuPyCPhXWfZar",
+      "subtotal": 10000,
+      "total": 10000
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "invoice.upcoming"
+}

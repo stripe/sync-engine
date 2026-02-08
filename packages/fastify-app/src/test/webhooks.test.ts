@@ -184,6 +184,7 @@ describe('POST /webhooks', () => {
     'refund_failed.json',
     'refund_updated.json',
     'active_entitlement_summary_updated.json',
+    'invoice_upcoming.json',
   ])('process event %s', async (jsonFile) => {
     const eventBody = await import(`./stripe/${jsonFile}`).then(({ default: myData }) => myData)
     const signature = createHmac('sha256', stripeWebhookSecret)

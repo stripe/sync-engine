@@ -203,7 +203,7 @@ npx stripe-experiment-sync supabase install \
 - [x] `invoice.payment_failed` 🟢
 - [x] `invoice.payment_succeeded` 🟢
 - [x] `invoice.sent` 🟢
-- [ ] `invoice.upcoming` 🔴 - Event has no id and cannot be processed
+- [x] `invoice.upcoming` — Acknowledged and skipped (preview object with no `id`)
 - [x] `invoice.updated` 🟢
 - [x] `invoice.overdue` 🟢
 - [x] `invoice.overpaid` 🟢
