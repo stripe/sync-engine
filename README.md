@@ -50,10 +50,10 @@ npx stripe-experiment-sync supabase install \
 
 ## Configuration Options
 
-| Option | Type | Description |
-| --- | --- | --- |
+| Option                          | Type    | Description                                                                                              |
+| ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
 | `poolConfig`                    | object  | **Required.** PostgreSQL connection pool configuration. Supports `connectionString`, `max`, `keepAlive`. |
-| `stripeSecretKey`               | string  | **Required.** Stripe secret key (sk_...)                                                                 |
+| `stripeSecretKey`               | string  | **Required.** Stripe secret key (sk\_...)                                                                |
 | `stripeWebhookSecret`           | string  | Stripe webhook signing secret (only needed for manual webhook processing)                                |
 | `stripeApiVersion`              | string  | Stripe API version (default: `2020-08-27`)                                                               |
 | `enableSigma`                   | boolean | Enable Stripe Sigma reporting data sync. Default: false                                                  |

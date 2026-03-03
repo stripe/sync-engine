@@ -101,7 +101,7 @@ describe('Sync E2E', () => {
   }, 30000)
 
   it('should sync all data from Stripe', async () => {
-    runCliCommand('sync', ['all'], {
+    runCliCommand('sync', ['all', '--rate-limit', '10', '--worker-count', '5'], {
       cwd,
       env: { DATABASE_URL: container.databaseUrl },
     })
@@ -172,10 +172,14 @@ describe('Sync E2E', () => {
 
     await sleep(2000)
 
-    runCliCommand('sync', ['product'], {
-      cwd,
-      env: { DATABASE_URL: container.databaseUrl },
-    })
+    runCliCommand(
+      'sync',
+      ['product', '--interval', '0', '--rate-limit', '10', '--worker-count', '5'],
+      {
+        cwd,
+        env: { DATABASE_URL: container.databaseUrl },
+      }
+    )
 
     const newProductInDb = await queryDbCount(
       pool,

@@ -86,11 +86,15 @@ describe('Error Recovery E2E', () => {
       return
     }
 
-    const syncProcess = spawn('node', ['dist/cli/index.js', 'sync', 'product'], {
-      cwd,
-      env: { ...process.env, DATABASE_URL: container.databaseUrl },
-      stdio: 'pipe',
-    })
+    const syncProcess = spawn(
+      'node',
+      ['dist/cli/index.js', 'sync', 'product', '--rate-limit', '10', '--worker-count', '5'],
+      {
+        cwd,
+        env: { ...process.env, DATABASE_URL: container.databaseUrl },
+        stdio: 'pipe',
+      }
+    )
 
     let status = ''
     let productsBeforeKill = 0
@@ -143,7 +147,7 @@ describe('Error Recovery E2E', () => {
     const productsAfterKill = await queryDbCount(pool, 'SELECT COUNT(*) FROM stripe.products')
     expect(productsAfterKill).toBeGreaterThanOrEqual(productsBeforeKill)
 
-    runCliCommand('sync', ['product'], {
+    runCliCommand('sync', ['product', '--rate-limit', '10', '--worker-count', '5'], {
       cwd,
       env: { DATABASE_URL: container.databaseUrl },
     })

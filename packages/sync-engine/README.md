@@ -69,4 +69,3 @@ See [LICENSE](LICENSE) file.
 ## Contributing
 
 Issues and pull requests are welcome at [https://github.com/stripe-experiments/sync-engine](https://github.com/stripe-experiments/sync-engine).
-

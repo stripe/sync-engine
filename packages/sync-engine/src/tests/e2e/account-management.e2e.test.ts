@@ -86,7 +86,7 @@ describe('Account Management E2E', () => {
 
   describe('dangerouslyDeleteSyncedAccountData()', () => {
     beforeAll(async () => {
-      runCliCommand('sync', ['product'], {
+      runCliCommand('sync', ['product', '--rate-limit', '10', '--worker-count', '5'], {
         cwd,
         env: { DATABASE_URL: container.databaseUrl },
       })

@@ -20,6 +20,7 @@ export interface CliOptions {
   workerCount?: number
   rateLimit?: number
   listenMode?: ListenMode
+  listenOnly?: boolean
 }
 
 /**

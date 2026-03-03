@@ -19,12 +19,16 @@ export class CliProcess {
   async start(env: Record<string, string> = {}): Promise<void> {
     const logStream = fs.createWriteStream(this.logFile)
 
-    this.process = spawn('node', ['dist/cli/index.js', 'start'], {
-      cwd: this.cwd,
-      env: { ...process.env, ...env },
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: false,
-    })
+    this.process = spawn(
+      'node',
+      ['dist/cli/index.js', 'sync', 'all', '--listen-mode', 'websocket', '--listen-only'],
+      {
+        cwd: this.cwd,
+        env: { ...process.env, ...env },
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: false,
+      }
+    )
 
     this.process.stdout?.pipe(logStream)
     this.process.stderr?.pipe(logStream)

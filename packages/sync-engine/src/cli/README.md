@@ -44,8 +44,8 @@ Options:
   --database-url <url>     Postgres DATABASE_URL (or DATABASE_URL env)
   --sigma                  Enable Sigma tables
   --interval <seconds>     Skip resync if a successful run completed within this many seconds (default: 86400)
-  --worker-count <count>   Number of parallel sync workers (default: 100)
-  --rate-limit <limit>     Max requests per second (default: 50)
+  --worker-count <count>   Number of parallel sync workers (default: 50)
+  --rate-limit <limit>     Max requests per second (default: 25)
   --listen-mode <mode>     Event listener mode: websocket, webhook, or disabled (default: disabled)
 ```
 

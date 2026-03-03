@@ -42,19 +42,27 @@ program
   .option(
     '--interval <seconds>',
     'Skip resync if a successful run completed within this many seconds (default: 86400)',
-    (val) => parseInt(val, 86400)
+    (val) => parseInt(val, 10),
+    86400
   )
-  .option('--worker-count <count>', 'Number of parallel sync workers (default: 50)', (val) =>
-    parseInt(val, 50)
+  .option(
+    '--worker-count <count>',
+    'Number of parallel sync workers (default: 50)',
+    (val) => parseInt(val, 10),
+    50
   )
-  .option('--rate-limit <limit>', 'Max requests per second (default: 25)', (val) =>
-    parseInt(val, 25)
+  .option(
+    '--rate-limit <limit>',
+    'Max requests per second (default: 25)',
+    (val) => parseInt(val, 10),
+    25
   )
   .option(
     '--listen-mode <mode>',
     'Event listener mode: websocket, webhook, or disabled (default: disabled)',
     'disabled'
   )
+  .option('--listen-only', 'Skip the initial sync and only set up the event listener')
   .action(async (entityName, options) => {
     await fullSyncCommand(
       {
@@ -65,6 +73,7 @@ program
         workerCount: options.workerCount,
         rateLimit: options.rateLimit,
         listenMode: options.listenMode,
+        listenOnly: options.listenOnly,
       },
       entityName
     )

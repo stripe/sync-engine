@@ -449,9 +449,28 @@ export async function fullSyncCommand(
       listener = await setupEventListener(stripeSync, config, options.listenMode)
     }
 
+    if (options.listenOnly) {
+      console.log(chalk.yellow('Skipping initial sync (--listen-only)'))
+      if (options.listenMode && options.listenMode !== 'disabled') {
+        console.log(
+          chalk.cyan('\n● Streaming live changes...') + chalk.gray(' [press Ctrl-C to abort]')
+        )
+        await new Promise(() => {})
+      }
+      await shutdown()
+      return
+    }
+
     const startTime = Date.now()
     const tables = entityName !== 'all' ? [entityName as StripeObject] : undefined
-    const result = await stripeSync.fullSync(tables, true, options.workerCount, options.rateLimit)
+    const result = await stripeSync.fullSync(
+      tables,
+      true,
+      options.workerCount,
+      options.rateLimit,
+      true,
+      intervalSeconds
+    )
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
     const objectCount = Object.keys(result.totals).length
     console.log(
