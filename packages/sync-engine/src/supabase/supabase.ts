@@ -531,7 +531,9 @@ export class SupabaseSetupClient {
       await this.runSQL(`CREATE SCHEMA IF NOT EXISTS stripe`)
 
       const existingComment = await this.readAndParseComment()
-      const oldVersion = existingComment?.oldVersion
+      // new version now becomes the old version and the current package version
+      // will become the new version (upgrade scenrio)
+      const oldVersion = existingComment?.newVersion
 
       // Signal installation started
       await this.updateComment('installing', oldVersion)
