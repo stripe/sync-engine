@@ -4,6 +4,8 @@ export const TEST_SECONDARY_MERCHANT_HOST = 'merchant-b.local'
 export function ensureTestMerchantConfig(): void {
   if (process.env.MERCHANT_CONFIG_JSON) return
 
+  process.env.STRIPE_ACCOUNT_ID = process.env.STRIPE_ACCOUNT_ID || 'acct_test_account'
+
   const databaseUrl =
     process.env.DATABASE_URL ??
     'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable&search_path=stripe'
