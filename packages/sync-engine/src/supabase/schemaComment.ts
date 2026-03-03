@@ -69,31 +69,39 @@ export function parseSchemaComment(comment: string | null | undefined): StripeSc
 
   // Extract version if present (format: "stripe-sync v1.2.3 ..." or "stripe-sync 1.2.3 ...")
   const versionMatch = comment.match(/stripe-sync\s+v?([0-9]+\.[0-9]+\.[0-9]+)/)
-  const newVersion = versionMatch?.[1]
+  const version = versionMatch?.[1]
 
   // Determine status from legacy suffixes
   let status: SchemaInstallationStatus
   let errorMessage: string | undefined
+
+  let oldVersion
+  let newVersion
 
   if (comment.includes(UNINSTALLATION_ERROR_SUFFIX)) {
     status = 'uninstall_error'
     // Extract error message after " - "
     const errorMatch = comment.match(/uninstallation:error\s*-\s*(.+)$/)
     errorMessage = errorMatch?.[1]
+    oldVersion = version
   } else if (comment.includes(UNINSTALLATION_STARTED_SUFFIX)) {
     status = 'uninstalling'
+    oldVersion = version
   } else if (comment.includes(INSTALLATION_ERROR_SUFFIX)) {
     status = 'install_error'
     const errorMatch = comment.match(/installation:error\s*-\s*(.+)$/)
     errorMessage = errorMatch?.[1]
+    newVersion = version
   } else if (comment.includes(INSTALLATION_STARTED_SUFFIX)) {
     status = 'installing'
+    newVersion = version
   } else if (comment.includes(INSTALLATION_INSTALLED_SUFFIX)) {
     status = 'installed'
+    oldVersion = version
   } else {
     // Unknown legacy format
     return { status: 'uninstalled' }
   }
 
-  return { status, newVersion, errorMessage }
+  return { status, oldVersion, newVersion, errorMessage }
 }
