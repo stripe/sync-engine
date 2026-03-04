@@ -42,6 +42,7 @@ export async function createServer(opts: buildOpts = {}): Promise<FastifyInstanc
     return StripeSync.create({
       ...merchantRuntime.config,
       stripeApiVersion: config.stripeApiVersion,
+      stripeAccountId: config.stripeAccountId,
       revalidateObjectsViaStripeApi: config.revalidateObjectsViaStripeApi,
       ...(config.partnerId ? { partnerId: config.partnerId } : {}),
       logger,

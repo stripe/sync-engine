@@ -125,6 +125,13 @@ export class StripeSync {
     const instance = new StripeSync(config)
     if (config.stripeAccountId) {
       instance.accountId = config.stripeAccountId
+      // Ensure the account row exists in the database so FK constraints are satisfied.
+      // Use a minimal record — getCurrentAccount() will enrich it on its next call.
+      const apiKeyHash = hashApiKey(config.stripeSecretKey)
+      await instance.postgresClient.upsertAccount(
+        { id: config.stripeAccountId, raw_data: { id: config.stripeAccountId } },
+        apiKeyHash
+      )
     } else {
       const account = await instance.getCurrentAccount()
       instance.accountId = account.id

@@ -26,9 +26,10 @@ beforeAll(async () => {
     logger,
   })
 
-  stripeSync = new StripeSync({
+  stripeSync = await StripeSync.create({
     ...primaryMerchantConfig,
     stripeApiVersion: config.stripeApiVersion,
+    stripeAccountId: 'acct_test_account',
     revalidateObjectsViaStripeApi: config.revalidateObjectsViaStripeApi,
     maxPostgresConnections: config.maxPostgresConnections,
     ...(config.partnerId ? { partnerId: config.partnerId } : {}),
@@ -63,7 +64,7 @@ describe('entitlements', () => {
         name: 'Test Customer 1',
       } as Stripe.Customer,
     ]
-    await stripeSync.upsertCustomers(customer, accountId)
+    await stripeSync.upsertAny(customer, accountId)
 
     const activeEntitlements = [
       {

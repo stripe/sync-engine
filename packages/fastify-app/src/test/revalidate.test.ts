@@ -24,9 +24,10 @@ beforeAll(async () => {
     logger,
   })
 
-  stripeSync = new StripeSync({
+  stripeSync = await StripeSync.create({
     ...primaryMerchantConfig,
     stripeApiVersion: config.stripeApiVersion,
+    stripeAccountId: 'acct_test_account',
     revalidateObjectsViaStripeApi: config.revalidateObjectsViaStripeApi,
     maxPostgresConnections: config.maxPostgresConnections,
     ...(config.partnerId ? { partnerId: config.partnerId } : {}),
@@ -49,7 +50,7 @@ describe('invoices', () => {
       ({ default: myData }) => myData
     )
 
-    await stripeSync.processEvent(eventBody as unknown as Stripe.Event)
+    await stripeSync.webhook.processEvent(eventBody as unknown as Stripe.Event)
 
     const result = await stripeSync.postgresClient.query(
       `select customer from stripe.invoices where id = 'in_1KJdKkJDPojXS6LNSwSWkZSN' limit 1`
@@ -63,7 +64,7 @@ describe('invoices', () => {
       ({ default: myData }) => myData
     )
 
-    await stripeSync.processEvent(eventBody as unknown as Stripe.Event)
+    await stripeSync.webhook.processEvent(eventBody as unknown as Stripe.Event)
 
     const result = await stripeSync.postgresClient.query(
       `select customer from stripe.invoices where id = 'in_1KJqKBJDPojXS6LNJbvLUgEy' limit 1`
