@@ -34,7 +34,7 @@
     "test:e2e": "pnpm run build && vitest run --config vitest.e2e.config.ts && vitest run --config vitest.e2e.webhook.config.ts",
     "start": "pnpm run build && node dist/cli/index.js backfill",
     "full-sync": "pnpm run build && node dist/cli/index.js full-sync",
-    "generate:sigma-schema": "tsx src/sigma/schema/fetch-schema.ts",
+    "generate:sigma-schema": "tsx src/sigma/schema/fetch-schema.ts"
   },
   "files": [
     "dist"
