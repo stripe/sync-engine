@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import type { ResourceConfig } from './types'
 import type { SigmaSyncProcessor } from './sigma/sigmaSyncProcessor'
+import { computeResourceOrder } from './utils/computeResourceOrder'
 
 export type StripeObject =
   | 'product'
@@ -25,11 +26,10 @@ export type StripeObject =
 
 // Resource registry - maps SyncObject → list/retrieve operations
 // Upsert is handled universally via StripeSync.upsertAny()
-// Order field determines sync sequence - parents before children for FK dependencies
+// Order field [computed] determines sync sequence - parents before children for FK dependencies
 export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, ResourceConfig> {
-  const core: Record<StripeObject, ResourceConfig> = {
+  const core: Record<StripeObject, Omit<ResourceConfig, 'order'>> = {
     product: {
-      order: 1,
       tableName: 'products',
       dependencies: [],
       listFn: (p) => stripe.products.list(p),
@@ -38,7 +38,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     price: {
-      order: 2,
       tableName: 'prices',
       dependencies: ['product'],
       listFn: (p) => stripe.prices.list(p),
@@ -47,7 +46,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     plan: {
-      order: 3,
       tableName: 'plans',
       dependencies: ['product'],
       listFn: (p) => stripe.plans.list(p),
@@ -56,7 +54,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     customer: {
-      order: 4,
       tableName: 'customers',
       dependencies: [],
       listFn: (p) => stripe.customers.list(p),
@@ -67,7 +64,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         'deleted' in customer && customer.deleted === true,
     },
     subscription: {
-      order: 5,
       tableName: 'subscriptions',
       dependencies: ['customer', 'price'],
       listFn: (p) => stripe.subscriptions.list(p),
@@ -81,7 +77,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         subscription.status === 'canceled' || subscription.status === 'incomplete_expired',
     },
     subscription_schedules: {
-      order: 6,
       tableName: 'subscription_schedules',
       dependencies: ['customer'],
       listFn: (p) => stripe.subscriptionSchedules.list(p),
@@ -92,7 +87,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         schedule.status === 'canceled' || schedule.status === 'completed',
     },
     invoice: {
-      order: 7,
       tableName: 'invoices',
       dependencies: ['customer', 'subscription'],
       listFn: (p) => stripe.invoices.list(p),
@@ -103,7 +97,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       isFinalState: (invoice: Stripe.Invoice) => invoice.status === 'void',
     },
     charge: {
-      order: 8,
       tableName: 'charges',
       dependencies: ['customer', 'invoice'],
       listFn: (p) => stripe.charges.list(p),
@@ -115,7 +108,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         charge.status === 'failed' || charge.status === 'succeeded',
     },
     setup_intent: {
-      order: 9,
       tableName: 'setup_intents',
       dependencies: ['customer'],
       listFn: (p) => stripe.setupIntents.list(p),
@@ -126,7 +118,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         setupIntent.status === 'canceled' || setupIntent.status === 'succeeded',
     },
     payment_method: {
-      order: 10,
       tableName: 'payment_methods',
       dependencies: ['customer'],
       listFn: (p) => stripe.paymentMethods.list(p),
@@ -135,7 +126,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     payment_intent: {
-      order: 11,
       tableName: 'payment_intents',
       dependencies: ['customer', 'invoice'],
       listFn: (p) => stripe.paymentIntents.list(p),
@@ -146,7 +136,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         paymentIntent.status === 'canceled' || paymentIntent.status === 'succeeded',
     },
     tax_id: {
-      order: 12,
       tableName: 'tax_ids',
       dependencies: ['customer'],
       listFn: (p) => stripe.taxIds.list(p),
@@ -155,7 +144,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     credit_note: {
-      order: 13,
       tableName: 'credit_notes',
       dependencies: ['customer', 'invoice'],
       listFn: (p) => stripe.creditNotes.list(p),
@@ -166,7 +154,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       isFinalState: (creditNote: Stripe.CreditNote) => creditNote.status === 'void',
     },
     dispute: {
-      order: 14,
       tableName: 'disputes',
       dependencies: ['charge'],
       listFn: (p) => stripe.disputes.list(p),
@@ -177,7 +164,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
         dispute.status === 'won' || dispute.status === 'lost',
     },
     early_fraud_warning: {
-      order: 15,
       tableName: 'early_fraud_warnings',
       dependencies: ['payment_intent', 'charge'],
       listFn: (p) => stripe.radar.earlyFraudWarnings.list(p),
@@ -186,7 +172,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     refund: {
-      order: 16,
       tableName: 'refunds',
       dependencies: ['payment_intent', 'charge'],
       listFn: (p) => stripe.refunds.list(p),
@@ -195,7 +180,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: true,
     },
     checkout_sessions: {
-      order: 17,
       tableName: 'checkout_sessions',
       dependencies: ['customer', 'subscription', 'payment_intent', 'invoice'],
       listFn: (p) => stripe.checkout.sessions.list(p),
@@ -205,7 +189,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       listExpands: [{ lines: (id) => stripe.checkout.sessions.listLineItems(id, { limit: 100 }) }],
     },
     active_entitlements: {
-      order: 18,
       tableName: 'active_entitlements',
       dependencies: ['customer'],
       listFn: (p) =>
@@ -217,7 +200,6 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
       sync: false,
     },
     review: {
-      order: 19,
       tableName: 'reviews',
       dependencies: ['payment_intent', 'charge'],
       listFn: (p) => stripe.reviews.list(p),
@@ -227,7 +209,11 @@ export function buildResourceRegistry(stripe: Stripe): Record<StripeObject, Reso
     },
   }
 
-  return core
+  const orderMap = computeResourceOrder(core)
+
+  return Object.fromEntries(
+    Object.entries(core).map(([key, config]) => [key, { ...config, order: orderMap.get(key)! }])
+  ) as Record<StripeObject, ResourceConfig>
 }
 
 /**
