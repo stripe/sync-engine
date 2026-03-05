@@ -119,29 +119,6 @@ Deno.serve(async (req) => {
 
       const comment = commentResult[0]?.comment || null
 
-      // Parse comment (supports both JSON and legacy plain-text format)
-      const parsedComment = parseSchemaComment(comment)
-      let installationStatus = 'not_installed'
-
-      if (parsedComment) {
-        // Map StripeSchemaComment status to response status
-        switch (parsedComment.status) {
-          case 'installing':
-            installationStatus = 'installing'
-            break
-          case 'installed':
-            installationStatus = 'installed'
-            break
-          case 'install_error':
-          case 'uninstall_error':
-            installationStatus = 'error'
-            break
-          case 'uninstalling':
-            installationStatus = 'uninstalling'
-            break
-        }
-      }
-
       // Query sync runs (only if schema exists)
       let syncStatus: Array<Record<string, unknown>> = []
       if (comment) {
@@ -160,10 +137,12 @@ Deno.serve(async (req) => {
         }
       }
 
+      const parsedComment = parseSchemaComment(comment)
+
       return new Response(
         JSON.stringify({
           package_version: VERSION,
-          installation_status: installationStatus,
+          installation_status: parsedComment.status,
           sync_status: syncStatus,
         }),
         {
