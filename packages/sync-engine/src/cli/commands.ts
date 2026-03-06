@@ -12,7 +12,7 @@ import {
   type StripeWebhookEvent,
 } from '../index'
 import { createTunnel, type NgrokTunnel } from './ngrok'
-import { SYNC_OBJECTS, type StripeObject } from '../resourceRegistry'
+import { type StripeObject } from '../resourceRegistry'
 import { install, uninstall } from '../supabase'
 
 /**
