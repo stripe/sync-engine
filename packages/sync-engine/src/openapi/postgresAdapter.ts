@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import type { DialectAdapter } from './dialectAdapter'
 import type { ParsedColumn, ParsedResourceTable, ScalarType } from './types'
