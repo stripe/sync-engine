@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { DeployForm } from '@/components/DeployForm'
 import { SyncStatus } from '@/components/SyncStatus'
+import { SyncProgress } from '@/components/SyncProgress'
 import { InstallationStatus } from '@/components/InstallationStatus'
 
 export default function Home() {
@@ -15,16 +16,18 @@ export default function Home() {
       <h1 style={{ marginBottom: 8 }}>Stripe Sync</h1>
       <p style={{ color: '#666', marginBottom: 32 }}>Deploy Stripe sync to your Supabase project</p>
 
-      <DeployForm
-        onDeploying={setDeploying}
-        onSuccess={(id) => {
-          setDeploying(false)
-          setSessionId(id)
-          setInstallationComplete(false)
-        }}
-      />
+      {!sessionId && !deploying && (
+        <DeployForm
+          onDeploying={setDeploying}
+          onSuccess={(id) => {
+            setDeploying(false)
+            setSessionId(id)
+            setInstallationComplete(false)
+          }}
+        />
+      )}
 
-      <div style={{ marginTop: 32 }}>
+      <div style={{ marginTop: sessionId || deploying ? 0 : 32 }}>
         {deploying && (
           <div style={statusStyle}>
             <span style={{ fontSize: 20 }}>🚀</span>
@@ -44,8 +47,10 @@ export default function Home() {
 
         {!deploying && sessionId && installationComplete && (
           <div>
-            <h2 style={{ fontSize: 18, marginBottom: 16 }}>Sync Status</h2>
             <SyncStatus sessionId={sessionId} />
+            <div style={{ marginTop: 24 }}>
+              <SyncProgress sessionId={sessionId} />
+            </div>
           </div>
         )}
       </div>
