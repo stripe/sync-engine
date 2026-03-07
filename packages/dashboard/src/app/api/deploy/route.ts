@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       supabaseAccessToken,
       supabaseProjectRef,
       stripeKey,
+      workerIntervalSeconds: 30,
     })
 
     // Create session to store credentials server-side (for Management API queries)
