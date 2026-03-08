@@ -42,30 +42,6 @@ export class SupabaseSetupClient {
   }
 
   /**
-   * Validate that the project exists and we have access.
-   * Fetches the project directly by ref instead of listing all projects,
-   * because some org-level tokens lack the list-all permission.
-   */
-  async validateProject(): Promise<ProjectInfo> {
-    const baseUrl = this.supabaseManagementUrl || 'https://api.supabase.com'
-    const response = await fetch(`${baseUrl}/v1/projects/${this.projectRef}`, {
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    })
-    if (!response.ok) {
-      const body = await response.text()
-      throw new Error(
-        `Project ${this.projectRef} not found or you don't have access (${response.status}: ${body})`
-      )
-    }
-    const project = await response.json()
-    return {
-      id: project.ref,
-      name: project.name,
-      region: project.region,
-    }
-  }
-
-  /**
    * Deploy an Edge Function
    */
   async deployFunction(name: string, code: string, verifyJwt = false): Promise<void> {
@@ -524,9 +500,6 @@ export class SupabaseSetupClient {
     const version = packageVersion || 'latest'
 
     try {
-      // Validate project
-      await this.validateProject()
-
       // Create schema if it doesn't exist (before we can comment on it)
       await this.runSQL(`CREATE SCHEMA IF NOT EXISTS stripe`)
 
