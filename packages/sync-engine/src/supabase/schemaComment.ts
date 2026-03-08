@@ -36,6 +36,11 @@ export interface StripeSchemaComment {
 
   /** Error message if status is install error or uninstall error */
   errorMessage?: string
+
+  /**
+   * Time when installation or uninstallation started
+   */
+  startTime?: number
 }
 
 /**
