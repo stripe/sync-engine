@@ -12,23 +12,6 @@ const MGMT_API_BASE = MGMT_API_BASE_RAW.match(/^https?:\/\//)
   ? MGMT_API_BASE_RAW
   : `https://${MGMT_API_BASE_RAW}`
 
-// Helper to validate accessToken against Management API
-async function validateAccessToken(projectRef: string, accessToken: string): Promise<boolean> {
-  // Try to fetch project details using the access token
-  // This validates that the token is valid for the management API
-  const url = `${MGMT_API_BASE}/v1/projects/${projectRef}`
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  })
-
-  // If we can successfully get the project, the token is valid
-  return response.ok
-}
-
 // Helper to delete edge function via Management API
 async function deleteEdgeFunction(
   projectRef: string,
@@ -90,10 +73,6 @@ Deno.serve(async (req) => {
   }
 
   const accessToken = authHeader.substring(7) // Remove 'Bearer '
-  const isValid = await validateAccessToken(projectRef, accessToken)
-  if (!isValid) {
-    return new Response('Forbidden: Invalid access token for this project', { status: 403 })
-  }
 
   // Handle GET requests for status
   if (req.method === 'GET') {
@@ -409,7 +388,7 @@ Deno.serve(async (req) => {
     if (!supabaseUrl) {
       throw new Error('SUPABASE_URL environment variable is not set')
     }
-    const webhookUrl = supabaseUrl + '/functions/v1/stripe-webhook'
+    const webhookUrl = `'${supabaseUrl}/functions/v1/stripe-webhook`
 
     const webhook = await stripeSync.webhook.findOrCreateManagedWebhook(webhookUrl)
 

@@ -5,8 +5,8 @@
  * Progress persists in _sync_runs and _sync_obj_runs across invocations.
  */
 
-import { StripeSync } from '../../index.ts'
 import postgres from 'postgres'
+import { StripeSync } from '../../index.ts'
 
 const BATCH_SIZE = 1
 const MAX_RUN_AGE_MS = 6 * 60 * 60 * 1000
@@ -68,9 +68,14 @@ Deno.serve(async (req) => {
       return new Response('Forbidden: Invalid sigma worker secret', { status: 403 })
     }
 
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
+    if (!stripeSecretKey) {
+      return jsonResponse({ error: 'STRIPE_SECRET_KEY not set' }, 500)
+    }
+
     stripeSync = await StripeSync.create({
       poolConfig: { connectionString: dbUrl, max: 1 },
-      stripeSecretKey: Deno.env.get('STRIPE_SECRET_KEY')!,
+      stripeSecretKey,
       enableSigma: true,
       sigmaPageSizeOverride: 1000,
       schemaName,
