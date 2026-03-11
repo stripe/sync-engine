@@ -15,7 +15,9 @@
     "dashboard": "pnpm --filter @supabase/stripe-sync-dashboard dev",
     "explorer:db:start": "tsx scripts/explorer-harness.ts start",
     "explorer:db:stop": "tsx scripts/explorer-harness.ts stop",
-    "explorer:db:status": "tsx scripts/explorer-harness.ts status"
+    "explorer:db:status": "tsx scripts/explorer-harness.ts status",
+    "explorer:migrate": "tsx scripts/explorer-migrate.ts",
+    "explorer:seed": "tsx scripts/explorer-seed.ts"
   },
   "dependencies": {
     "pino": "^10.0.0"
