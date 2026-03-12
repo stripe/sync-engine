@@ -70,25 +70,14 @@ await runMigrationsFromContent(
 
 - **`all_projected`**:
   - Does NOT pass `allowedTables` to `SpecParser.parse()` (property is omitted)
-  - Per `ParseSpecOptions` type documentation: "If omitted, all resolvable x-resourceId entries are parsed"
-  - Current implementation: When `allowedTables` is undefined, the SpecParser defaults to `RUNTIME_REQUIRED_TABLES` (see note below)
-
-### Current Implementation Note
-
-⚠️ **Important**: The `SpecParser` implementation currently has a default behavior where omitting `allowedTables` falls back to `RUNTIME_REQUIRED_TABLES` (see `specParser.ts` line 44):
-
-```typescript
-const allowedTables = new Set(options.allowedTables ?? RUNTIME_REQUIRED_TABLES)
-```
-
-This means that in the **current implementation**, both modes will produce the same table count (~24 tables). The type documentation suggests this should parse all resolvable tables, but the implementation doesn't match this expectation.
+  - When `allowedTables` is undefined, the `SpecParser` parses all resolvable `x-resourceId` entries from the OpenAPI spec (i.e., no table filtering is applied).
 
 ### Table Counts
 
 Based on the current implementation:
 
 - **runtime_required**: ~24 tables (RUNTIME_REQUIRED_TABLES)
-- **all_projected**: ~24 tables (currently defaults to RUNTIME_REQUIRED_TABLES)
+- **all_projected**: all resolvable tables from the OpenAPI spec (significantly more than `runtime_required`; the exact count depends on the Stripe API version and spec).
 - **Expected behavior**: all_projected should produce significantly more tables
 
 To verify the actual table counts in your environment, run:
