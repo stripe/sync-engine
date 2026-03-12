@@ -6,7 +6,6 @@ const CLI_VERSION = '1.33.0'
 const PONG_WAIT = 10 * 1000 // 10 seconds - max time to wait for pong
 const PING_PERIOD = (PONG_WAIT * 2) / 10 // 2 seconds - send ping before pong timeout
 const CONNECT_ATTEMPT_WAIT = 10 * 1000 // 10 seconds - retry interval on connection failure
-const DEFAULT_RECONNECT_INTERVAL = 60 * 1000 // 60 seconds - proactive reconnect interval
 
 export interface WebhookProcessingResult {
   status: number
@@ -117,14 +116,8 @@ export async function createStripeWebSocketClient(
   // Create session
   const session = await createCliSession(stripeApiKey)
 
-  // Server-controlled reconnect interval (default 60s)
-  const reconnectInterval = session.reconnect_delay
-    ? session.reconnect_delay * 1000
-    : DEFAULT_RECONNECT_INTERVAL
-
   let ws: WebSocket | null = null
   let pingInterval: NodeJS.Timeout | null = null
-  let reconnectTimer: NodeJS.Timeout | null = null
   let connected = false
   let shouldRun = true
   let lastPongReceived: number = Date.now()
@@ -137,10 +130,6 @@ export async function createStripeWebSocketClient(
     if (pingInterval) {
       clearInterval(pingInterval)
       pingInterval = null
-    }
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
     }
     if (ws) {
       ws.removeAllListeners()
@@ -331,30 +320,14 @@ export async function createStripeWebSocketClient(
 
       if (!shouldRun) break
 
-      // 2. Connection established - wait for one of these events:
-      //    - stop() called
-      //    - unexpected disconnect (notifyClose)
-      //    - proactive reconnect timer fires
+      // 2. Connection established - wait for disconnect or stop().
+      //    Ping/pong heartbeat detects stale connections and terminates them,
+      //    which triggers the close handler and unblocks this promise.
       await new Promise<void>((resolve) => {
-        // Set up notifyClose signal
         notifyCloseResolve = resolve
-
-        // Set up stop signal
         stopResolve = resolve
-
-        // Set up proactive reconnect timer
-        reconnectTimer = setTimeout(() => {
-          // Proactive reconnection to prevent stale connections
-          cleanupConnection()
-          resolve()
-        }, reconnectInterval)
       })
 
-      // Clean up before next iteration or exit
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer)
-        reconnectTimer = null
-      }
       notifyCloseResolve = null
       stopResolve = null
     }

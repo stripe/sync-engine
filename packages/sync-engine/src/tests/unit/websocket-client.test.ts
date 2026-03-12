@@ -270,19 +270,6 @@ describe('websocket-client', () => {
     })
 
     it('should detect stale connection when no pong received within PONG_WAIT', async () => {
-      // Use a longer reconnect delay so stale detection can occur before proactive reconnect
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              ...mockSessionResponse,
-              reconnect_delay: 60, // 60s reconnect delay
-            }),
-        })
-      )
-
       const { createStripeWebSocketClient } = await import('../../websocket-client')
 
       const onError = vi.fn()
@@ -310,82 +297,7 @@ describe('websocket-client', () => {
     })
   })
 
-  describe('Proactive reconnection', () => {
-    it('should use server-provided reconnect_delay for reconnect interval', async () => {
-      const { createStripeWebSocketClient } = await import('../../websocket-client')
-
-      const onReady = vi.fn()
-      await createStripeWebSocketClient({
-        stripeApiKey: 'sk_test_123',
-        onEvent: vi.fn(),
-        onReady,
-      })
-
-      // Wait for runLoop to create WebSocket
-      await vi.advanceTimersByTimeAsync(0)
-
-      const wsInstance = wsInstances[0]
-      wsInstance._triggerOpen()
-      wsInstance._triggerPong() // Keep connection alive
-
-      expect(onReady).toHaveBeenCalledTimes(1)
-
-      // Advance to just before reconnect interval (5s from session)
-      await vi.advanceTimersByTimeAsync(4900)
-      wsInstance._triggerPong()
-
-      // Should not have reconnected yet
-      expect(wsInstances.length).toBe(1)
-
-      // Advance past reconnect interval
-      await vi.advanceTimersByTimeAsync(200)
-
-      // Should have created a new WebSocket for reconnection
-      expect(wsInstances.length).toBe(2)
-    })
-
-    it('should use default 60s reconnect interval when server does not provide one', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              ...mockSessionResponse,
-              reconnect_delay: 0, // No server-provided delay
-            }),
-        })
-      )
-
-      const { createStripeWebSocketClient } = await import('../../websocket-client')
-
-      await createStripeWebSocketClient({
-        stripeApiKey: 'sk_test_123',
-        onEvent: vi.fn(),
-      })
-
-      // Wait for runLoop to create WebSocket
-      await vi.advanceTimersByTimeAsync(0)
-
-      const wsInstance = wsInstances[0]
-      wsInstance._triggerOpen()
-
-      // Keep connection alive with pongs
-      for (let i = 0; i < 6; i++) {
-        await vi.advanceTimersByTimeAsync(9000)
-        wsInstance._triggerPong()
-      }
-
-      // Should not have reconnected yet (only 54s passed)
-      expect(wsInstances.length).toBe(1)
-
-      // Advance to trigger 60s reconnect
-      await vi.advanceTimersByTimeAsync(7000)
-
-      // Should have created a new WebSocket
-      expect(wsInstances.length).toBe(2)
-    })
-
+  describe('Reconnection', () => {
     it('should reconnect immediately on unexpected disconnect', async () => {
       const { createStripeWebSocketClient } = await import('../../websocket-client')
 
