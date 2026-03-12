@@ -59,7 +59,7 @@
     "@types/inquirer": "^9.0.7",
     "@types/node": "^24.10.1",
     "@types/papaparse": "5.3.16",
-    "@types/pg": "^8.15.5",
+    "@types/pg": "^8.18.0",
     "@types/ws": "^8.5.13",
     "@types/yesql": "^4.1.4",
     "@vitest/ui": "^4.0.9",

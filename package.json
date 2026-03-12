@@ -12,7 +12,10 @@
     "lint": "pnpm -r run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dashboard": "pnpm --filter @supabase/stripe-sync-dashboard dev"
+    "dashboard": "pnpm --filter @supabase/stripe-sync-dashboard dev",
+    "visualizer": "pnpm --filter @supabase/stripe-sync-visualizer dev",
+    "visualizer:with-data": "pnpm explorer:build && pnpm visualizer",
+    "explorer:build": "tsx scripts/explorer-build.ts"
   },
   "dependencies": {
     "pino": "^10.0.0"
@@ -20,11 +23,14 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.35.0",
+    "@types/pg": "^8.18.0",
     "@typescript-eslint/eslint-plugin": "^8.44.0",
     "@typescript-eslint/parser": "^8.44.0",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "pg": "^8.16.3",
+    "playwright": "^1.58.2",
     "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.5.0",

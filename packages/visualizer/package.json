@@ -1,0 +1,31 @@
+{
+  "name": "@supabase/stripe-sync-visualizer",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@codemirror/lang-sql": "^6.7.0",
+    "@codemirror/state": "^6.4.0",
+    "@codemirror/view": "^6.26.0",
+    "@electric-sql/pglite": "^0.2.0",
+    "codemirror": "^6.0.1",
+    "next": "^15",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5"
+  }
+}

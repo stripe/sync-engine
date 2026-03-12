@@ -40,15 +40,15 @@ describeWithDb('runMigrations openapi pipeline', () => {
       `SELECT table_name
        FROM information_schema.tables
        WHERE table_schema = 'stripe'
-         AND table_name IN ('_migrations', 'accounts', '_managed_webhooks', '_sync_runs', '_sync_obj_runs')
+         AND table_name IN ('_migrations', '_sync_accounts', '_managed_webhooks', '_sync_runs', '_sync_obj_runs')
        ORDER BY table_name`
     )
     expect(tablesResult.rows.map((row) => row.table_name)).toEqual([
       '_managed_webhooks',
       '_migrations',
+      '_sync_accounts',
       '_sync_obj_runs',
       '_sync_runs',
-      'accounts',
     ])
 
     const viewsResult = await pool.query(
@@ -100,7 +100,7 @@ describeWithDb('runMigrations openapi pipeline', () => {
   it('enforces one active sync run per account+triggered_by', async () => {
     const accountId = 'acct_openapi_migrate_test'
     await pool.query(
-      `INSERT INTO "stripe"."accounts" ("_raw_data", "api_key_hashes")
+      `INSERT INTO "stripe"."_sync_accounts" ("_raw_data", "api_key_hashes")
        VALUES ($1::jsonb, ARRAY['hash_openapi'])`,
       [JSON.stringify({ id: accountId, object: 'account' })]
     )

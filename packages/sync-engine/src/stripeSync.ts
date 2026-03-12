@@ -141,7 +141,7 @@ export class StripeSync {
       // Ensure the account row exists in the database so FK constraints are satisfied.
       // Use a minimal record — getCurrentAccount() will enrich it on its next call.
       const apiKeyHash = hashApiKey(config.stripeSecretKey)
-      await instance.postgresClient.upsertAccount(
+      await instance.postgresClient.upsertSyncMetadataAccount(
         { id: config.stripeAccountId, raw_data: { id: config.stripeAccountId } },
         apiKeyHash
       )
@@ -183,7 +183,7 @@ export class StripeSync {
 
     // Try to lookup account from database using API key hash (fast path)
     try {
-      const account = await this.postgresClient.getAccountByApiKeyHash(apiKeyHash)
+      const account = await this.postgresClient.getSyncMetadataAccountByApiKeyHash(apiKeyHash)
       if (account) {
         return account as Stripe.Account
       }
@@ -201,7 +201,10 @@ export class StripeSync {
         ? await this.stripe.accounts.retrieve(accountIdParam)
         : await this.stripe.accounts.retrieve()
 
-      await this.postgresClient.upsertAccount({ id: account.id, raw_data: account }, apiKeyHash)
+      await this.postgresClient.upsertSyncMetadataAccount(
+        { id: account.id, raw_data: account },
+        apiKeyHash
+      )
       return account
     } catch (error) {
       this.config.logger?.error(error, 'Failed to retrieve account from Stripe API')

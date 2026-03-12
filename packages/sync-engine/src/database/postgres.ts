@@ -4,7 +4,7 @@ import { QueryUtils, type InsertColumn } from './QueryUtils'
 
 type PostgresConfig = {
   schema: string
-  /** Schema for metadata tables (accounts, _sync_runs, etc.). Defaults to schema when not provided. */
+  /** Schema for metadata tables (_sync_accounts, _sync_runs, etc.). Defaults to schema when not provided. */
   syncSchema?: string
   poolConfig: PoolConfig
 }
@@ -12,7 +12,7 @@ type PostgresConfig = {
 const DAY = 60 * 60 * 24
 
 //todo: move them into migrations. also think about what should be done with ORDERED_STRIPE_TABLES.
-const METADATA_TABLES = new Set(['accounts', '_managed_webhooks', '_sync_runs', '_sync_obj_runs'])
+const SYNC_ACCOUNTS_TABLE_NAME = '_sync_accounts'
 /**
  * All Stripe tables that store account-related data.
  * Ordered for safe cascade deletion: dependencies first, then parent tables last.
@@ -77,7 +77,7 @@ export class PostgresClient {
   }
 
   private schemaForTable(table: string): string {
-    return METADATA_TABLES.has(table) ? this.syncSchema : this.config.schema
+    return table.startsWith('_') ? this.syncSchema : this.config.schema
   }
 
   async delete(table: string, id: string): Promise<boolean> {
@@ -277,9 +277,10 @@ export class PostgresClient {
     return missingIds
   }
 
-  // Account management methods
+  // Sync metadata account methods (`stripe._sync_accounts`)
+  // These operate on the sync-owned account root, not the projected Stripe `accounts` resource.
 
-  async upsertAccount(
+  async upsertSyncMetadataAccount(
     accountData: {
       id: string
       raw_data: any // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -291,7 +292,7 @@ export class PostgresClient {
     // Upsert account and add API key hash to array if not already present
     // Note: id is auto-generated from _raw_data->>'id'
     await this.query(
-      `INSERT INTO "${this.syncSchema}"."accounts" ("_raw_data", "api_key_hashes", "first_synced_at", "_last_synced_at")
+      `INSERT INTO "${this.syncSchema}"."${SYNC_ACCOUNTS_TABLE_NAME}" ("_raw_data", "api_key_hashes", "first_synced_at", "_last_synced_at")
        VALUES ($1::jsonb, ARRAY[$2], now(), now())
        ON CONFLICT (id)
        DO UPDATE SET
@@ -299,7 +300,7 @@ export class PostgresClient {
          "api_key_hashes" = (
            SELECT ARRAY(
              SELECT DISTINCT unnest(
-               COALESCE("${this.syncSchema}"."accounts"."api_key_hashes", '{}') || ARRAY[$2]
+              COALESCE("${this.syncSchema}"."${SYNC_ACCOUNTS_TABLE_NAME}"."api_key_hashes", '{}') || ARRAY[$2]
              )
            )
          ),
@@ -310,36 +311,23 @@ export class PostgresClient {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getAllAccounts(): Promise<any[]> {
+  async getAllSyncMetadataAccounts(): Promise<any[]> {
     const result = await this.query(
-      `SELECT _raw_data FROM "${this.syncSchema}"."accounts"
+      `SELECT _raw_data FROM "${this.syncSchema}"."${SYNC_ACCOUNTS_TABLE_NAME}"
        ORDER BY _last_synced_at DESC`
     )
     return result.rows.map((row) => row._raw_data)
   }
 
   /**
-   * Get all accounts that have been synced to the database.
-   * Throws a descriptive error if the query fails.
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getAllSyncedAccounts(): Promise<any[]> {
-    try {
-      return await this.getAllAccounts()
-    } catch {
-      throw new Error('Failed to retrieve synced accounts from database')
-    }
-  }
-
-  /**
-   * Looks up an account ID by API key hash
+   * Looks up a sync metadata account ID by API key hash.
    * Uses the GIN index on api_key_hashes for fast lookups
    * @param apiKeyHash - SHA-256 hash of the Stripe API key
-   * @returns Account ID if found, null otherwise
+   * @returns Sync metadata account ID if found, null otherwise
    */
-  async getAccountIdByApiKeyHash(apiKeyHash: string): Promise<string | null> {
+  async getSyncMetadataAccountIdByApiKeyHash(apiKeyHash: string): Promise<string | null> {
     const result = await this.query(
-      `SELECT id FROM "${this.syncSchema}"."accounts"
+      `SELECT id FROM "${this.syncSchema}"."${SYNC_ACCOUNTS_TABLE_NAME}"
        WHERE $1 = ANY(api_key_hashes)
        LIMIT 1`,
       [apiKeyHash]
@@ -348,14 +336,14 @@ export class PostgresClient {
   }
 
   /**
-   * Looks up full account data by API key hash
+   * Looks up full sync metadata account data by API key hash.
    * @param apiKeyHash - SHA-256 hash of the Stripe API key
-   * @returns Account raw data if found, null otherwise
+   * @returns Sync metadata account raw data if found, null otherwise
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async getAccountByApiKeyHash(apiKeyHash: string): Promise<any | null> {
+  async getSyncMetadataAccountByApiKeyHash(apiKeyHash: string): Promise<any | null> {
     const result = await this.query(
-      `SELECT _raw_data FROM "${this.syncSchema}"."accounts"
+      `SELECT _raw_data FROM "${this.syncSchema}"."${SYNC_ACCOUNTS_TABLE_NAME}"
        WHERE $1 = ANY(api_key_hashes)
        LIMIT 1`,
       [apiKeyHash]
@@ -363,22 +351,63 @@ export class PostgresClient {
     return result.rows.length > 0 ? result.rows[0]._raw_data : null
   }
 
-  private getAccountIdColumn(table: (typeof ORDERED_STRIPE_TABLES)[number]): string {
+  private getSyncAccountReferenceColumn(table: (typeof ORDERED_STRIPE_TABLES)[number]): string {
     return TABLES_WITH_ACCOUNT_ID.has(table) ? 'account_id' : '_account_id'
   }
 
-  async getAccountRecordCounts(accountId: string): Promise<{ [tableName: string]: number }> {
+  private async projectedStripeAccountsTableExists(): Promise<boolean> {
+    const result = await this.query(
+      `SELECT EXISTS (
+          SELECT 1
+          FROM information_schema.tables
+          WHERE table_schema = $1
+            AND table_name = 'accounts'
+      ) AS exists`,
+      [this.config.schema]
+    )
+    return result.rows[0]?.exists === true
+  }
+
+  private async getProjectedStripeAccountRecordCount(
+    syncAccountId: string
+  ): Promise<number | null> {
+    if (!(await this.projectedStripeAccountsTableExists())) {
+      return null
+    }
+
+    const result = await this.query(
+      `SELECT COUNT(*) as count FROM "${this.config.schema}"."accounts"
+       WHERE "_account_id" = $1`,
+      [syncAccountId]
+    )
+    return parseInt(result.rows[0].count)
+  }
+
+  /**
+   * Count rows associated with a sync metadata account ID.
+   * This primarily counts sync-scoped tables keyed by `_account_id`, and it also
+   * includes projected `stripe.accounts` rows when that projected table exists.
+   */
+  async getSyncAccountScopedRecordCounts(
+    syncAccountId: string
+  ): Promise<{ [tableName: string]: number }> {
     const counts: { [tableName: string]: number } = {}
 
     for (const table of ORDERED_STRIPE_TABLES) {
-      const accountIdColumn = this.getAccountIdColumn(table)
+      const accountIdColumn = this.getSyncAccountReferenceColumn(table)
       const schema = this.schemaForTable(table)
       const result = await this.query(
         `SELECT COUNT(*) as count FROM "${schema}"."${table}"
          WHERE "${accountIdColumn}" = $1`,
-        [accountId]
+        [syncAccountId]
       )
       counts[table] = parseInt(result.rows[0].count)
+    }
+
+    const projectedStripeAccountCount =
+      await this.getProjectedStripeAccountRecordCount(syncAccountId)
+    if (projectedStripeAccountCount !== null) {
+      counts.accounts = projectedStripeAccountCount
     }
 
     return counts
@@ -426,84 +455,23 @@ export class PostgresClient {
     return { rowCount: rowCount || 0 }
   }
 
-  /**
-   * DANGEROUS: Delete an account and all associated data from the database
-   * This operation cannot be undone!
-   *
-   * @param accountId - The Stripe account ID to delete
-   * @param options - Options for deletion behavior
-   * @param options.dryRun - If true, only count records without deleting (default: false)
-   * @param options.useTransaction - If true, use transaction for atomic deletion (default: true)
-   * @returns Deletion summary with counts and warnings
-   */
-  async dangerouslyDeleteSyncedAccountData(
-    accountId: string,
-    options?: {
-      dryRun?: boolean
-      useTransaction?: boolean
+  private async deleteProjectedStripeAccountsForSyncAccount(
+    syncAccountId: string
+  ): Promise<number | null> {
+    if (!(await this.projectedStripeAccountsTableExists())) {
+      return null
     }
-  ): Promise<{
-    deletedAccountId: string
-    deletedRecordCounts: { [tableName: string]: number }
-    warnings: string[]
-  }> {
-    const dryRun = options?.dryRun ?? false
-    const useTransaction = options?.useTransaction ?? true
 
-    console.log(
-      `${dryRun ? 'Preview' : 'Deleting'} account ${accountId} (transaction: ${useTransaction})`
+    const projectedAccountsResult = await this.query(
+      `DELETE FROM "${this.config.schema}"."accounts"
+       WHERE "_account_id" = $1`,
+      [syncAccountId]
     )
-
-    try {
-      // Get record counts
-      const counts = await this.getAccountRecordCounts(accountId)
-
-      // Generate warnings
-      const warnings: string[] = []
-      let totalRecords = 0
-
-      for (const [table, count] of Object.entries(counts)) {
-        if (count > 0) {
-          totalRecords += count
-          warnings.push(`Will delete ${count} ${table} record${count !== 1 ? 's' : ''}`)
-        }
-      }
-
-      if (totalRecords > 100000) {
-        warnings.push(
-          `Large dataset detected (${totalRecords} total records). Consider using useTransaction: false for better performance.`
-        )
-      }
-
-      // Dry-run mode: just return counts
-      if (dryRun) {
-        console.log(`Dry-run complete: ${totalRecords} total records would be deleted`)
-        return {
-          deletedAccountId: accountId,
-          deletedRecordCounts: counts,
-          warnings,
-        }
-      }
-
-      // Actual deletion
-      const deletionCounts = await this.deleteAccountWithCascade(accountId, useTransaction)
-
-      console.log(`Successfully deleted account ${accountId} with ${totalRecords} total records`)
-
-      return {
-        deletedAccountId: accountId,
-        deletedRecordCounts: deletionCounts,
-        warnings,
-      }
-    } catch (error) {
-      console.error(error, `Failed to delete account ${accountId}`)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      throw new Error(`Failed to delete account ${accountId}: ${errorMessage}`)
-    }
+    return projectedAccountsResult.rowCount || 0
   }
 
-  async deleteAccountWithCascade(
-    accountId: string,
+  async deleteSyncAccountScopedDataWithCascade(
+    syncAccountId: string,
     useTransaction: boolean
   ): Promise<{ [tableName: string]: number }> {
     const deletionCounts: { [tableName: string]: number } = {}
@@ -515,23 +483,29 @@ export class PostgresClient {
 
       // Delete from all dependent tables
       for (const table of ORDERED_STRIPE_TABLES) {
-        const accountIdColumn = this.getAccountIdColumn(table)
+        const accountIdColumn = this.getSyncAccountReferenceColumn(table)
         const schema = this.schemaForTable(table)
         const result = await this.query(
           `DELETE FROM "${schema}"."${table}"
            WHERE "${accountIdColumn}" = $1`,
-          [accountId]
+          [syncAccountId]
         )
         deletionCounts[table] = result.rowCount || 0
       }
 
-      // Finally, delete the account itself
+      const projectedStripeAccountDeletionCount =
+        await this.deleteProjectedStripeAccountsForSyncAccount(syncAccountId)
+      if (projectedStripeAccountDeletionCount !== null) {
+        deletionCounts.accounts = projectedStripeAccountDeletionCount
+      }
+
+      // Finally, delete the sync metadata account root itself.
       const accountResult = await this.query(
-        `DELETE FROM "${this.syncSchema}"."accounts"
+        `DELETE FROM "${this.syncSchema}"."${SYNC_ACCOUNTS_TABLE_NAME}"
          WHERE "id" = $1`,
-        [accountId]
+        [syncAccountId]
       )
-      deletionCounts['accounts'] = accountResult.rowCount || 0
+      deletionCounts[SYNC_ACCOUNTS_TABLE_NAME] = accountResult.rowCount || 0
 
       if (useTransaction) {
         await this.query('COMMIT')

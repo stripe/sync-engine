@@ -1,6 +1,6 @@
 /**
- * Account Management E2E Test
- * Tests getCurrentAccount(), getAllSyncedAccounts(), and dangerouslyDeleteSyncedAccountData()
+ * Sync Metadata Account Management E2E Test
+ * Tests getCurrentAccount(), getAllSyncMetadataAccounts(), and sync-account-scoped deletion helpers
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { execSync } from 'child_process'
@@ -55,7 +55,7 @@ describe('Account Management E2E', () => {
 
       const dbCount = await queryDbCount(
         pool,
-        `SELECT COUNT(*) FROM stripe.accounts WHERE id = '${accountId}'`
+        `SELECT COUNT(*) FROM stripe._sync_accounts WHERE id = '${accountId}'`
       )
       expect(dbCount).toBe(1)
     })
@@ -63,28 +63,28 @@ describe('Account Management E2E', () => {
     it('should have raw_data column populated', async () => {
       const row = await queryDbSingle<{ _raw_data: object }>(
         pool,
-        `SELECT _raw_data FROM stripe.accounts WHERE id = '${accountId}'`
+        `SELECT _raw_data FROM stripe._sync_accounts WHERE id = '${accountId}'`
       )
       expect(row).not.toBeNull()
       expect(row!._raw_data).not.toBeNull()
     })
   })
 
-  describe('getAllSyncedAccounts()', () => {
-    it('should retrieve synced accounts from database', async () => {
-      const accounts = await sync.postgresClient.getAllSyncedAccounts()
+  describe('getAllSyncMetadataAccounts()', () => {
+    it('should retrieve sync metadata accounts from database', async () => {
+      const accounts = await sync.postgresClient.getAllSyncMetadataAccounts()
       expect(accounts.length).toBeGreaterThanOrEqual(1)
       expect(accounts[0].id).toMatch(/^acct_/)
     })
 
-    it('should order accounts by last synced', async () => {
-      const accounts = await sync.postgresClient.getAllSyncedAccounts()
+    it('should order sync metadata accounts by last synced', async () => {
+      const accounts = await sync.postgresClient.getAllSyncMetadataAccounts()
       const firstAccount = accounts[0]
       expect(firstAccount.id).toBe(accountId)
     })
   })
 
-  describe('dangerouslyDeleteSyncedAccountData()', () => {
+  describe('sync-account-scoped deletion helpers', () => {
     beforeAll(async () => {
       runCliCommand('sync', ['product', '--rate-limit', '10', '--worker-count', '5'], {
         cwd,
@@ -92,19 +92,15 @@ describe('Account Management E2E', () => {
       })
     }, 120000)
 
-    it('should preview deletion with dry-run (no actual deletion)', async () => {
+    it('should count sync-account-scoped records before deletion', async () => {
       const productsBefore = await queryDbCount(
         pool,
         `SELECT COUNT(*) FROM stripe.products WHERE _account_id = '${accountId}'`
       )
       expect(productsBefore).toBeGreaterThan(0)
 
-      const result = await sync.postgresClient.dangerouslyDeleteSyncedAccountData(accountId, {
-        dryRun: true,
-      })
-      expect(result.deletedAccountId).toBe(accountId)
-      expect(result.deletedRecordCounts).toBeDefined()
-      expect(result.deletedRecordCounts.products).toBe(productsBefore)
+      const counts = await sync.postgresClient.getSyncAccountScopedRecordCounts(accountId)
+      expect(counts.products).toBe(productsBefore)
 
       const productsAfter = await queryDbCount(
         pool,
@@ -118,17 +114,17 @@ describe('Account Management E2E', () => {
         pool,
         `SELECT COUNT(*) FROM stripe.products WHERE _account_id = '${accountId}'`
       )
-      const accountsBefore = await queryDbCount(
+      const syncAccountsBefore = await queryDbCount(
         pool,
-        `SELECT COUNT(*) FROM stripe.accounts WHERE id = '${accountId}'`
+        `SELECT COUNT(*) FROM stripe._sync_accounts WHERE id = '${accountId}'`
       )
 
-      const result = await sync.postgresClient.dangerouslyDeleteSyncedAccountData(accountId, {
-        dryRun: false,
-      })
-      expect(result.deletedAccountId).toBe(accountId)
-      expect(result.deletedRecordCounts.products).toBe(productsBefore)
-      expect(result.deletedRecordCounts.accounts).toBe(accountsBefore)
+      const result = await sync.postgresClient.deleteSyncAccountScopedDataWithCascade(
+        accountId,
+        true
+      )
+      expect(result.products).toBe(productsBefore)
+      expect(result._sync_accounts).toBe(syncAccountsBefore)
 
       const productsAfter = await queryDbCount(
         pool,
@@ -136,21 +132,19 @@ describe('Account Management E2E', () => {
       )
       expect(productsAfter).toBe(0)
 
-      const accountsAfter = await queryDbCount(
+      const syncAccountsAfter = await queryDbCount(
         pool,
-        `SELECT COUNT(*) FROM stripe.accounts WHERE id = '${accountId}'`
+        `SELECT COUNT(*) FROM stripe._sync_accounts WHERE id = '${accountId}'`
       )
-      expect(accountsAfter).toBe(0)
+      expect(syncAccountsAfter).toBe(0)
     })
 
     it('should handle non-existent account gracefully', async () => {
-      const result = await sync.postgresClient.dangerouslyDeleteSyncedAccountData(
+      const result = await sync.postgresClient.deleteSyncAccountScopedDataWithCascade(
         'acct_nonexistent',
-        {
-          dryRun: false,
-        }
+        true
       )
-      expect(result.deletedRecordCounts.accounts).toBe(0)
+      expect(result._sync_accounts).toBe(0)
     })
   })
 })

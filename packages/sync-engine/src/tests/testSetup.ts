@@ -209,10 +209,10 @@ export async function createMockedStripeSync(
 }
 
 /**
- * Upsert a test account so foreign-key constraints are satisfied.
+ * Upsert a sync metadata account root so foreign-key constraints are satisfied.
  */
 export async function upsertTestAccount(sync: StripeSync, accountId: string): Promise<void> {
-  await sync.postgresClient.upsertAccount(
+  await sync.postgresClient.upsertSyncMetadataAccount(
     { id: accountId, raw_data: { id: accountId } },
     'test_hash'
   )

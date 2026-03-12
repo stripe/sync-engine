@@ -24,7 +24,7 @@ const RESERVED_COLUMNS = new Set([
 export const RUNTIME_REQUIRED_TABLES = DEFAULT_RUNTIME_REQUIRED_TABLES
 
 export const OPENAPI_RESOURCE_TABLE_ALIASES = DEFAULT_OPENAPI_RESOURCE_TABLE_ALIASES
-/** @deprecated Use OPENAPI_RESOURCE_TABLE_ALIASES instead. */
+/** Backward-compatible alias for runtime resource table mappings. */
 export const RUNTIME_RESOURCE_ALIASES = OPENAPI_RESOURCE_TABLE_ALIASES
 
 type ColumnAccumulator = {
@@ -41,7 +41,7 @@ export class SpecParser {
     }
 
     const aliases = { ...OPENAPI_RESOURCE_TABLE_ALIASES, ...(options.resourceAliases ?? {}) }
-    const allowedTables = new Set(options.allowedTables ?? RUNTIME_REQUIRED_TABLES)
+    const allowedTables = options.allowedTables ? new Set(options.allowedTables) : null
     const tableMap = new Map<
       string,
       {
@@ -59,7 +59,7 @@ export class SpecParser {
       }
 
       const tableName = this.resolveTableName(resourceId, aliases)
-      if (!allowedTables.has(tableName)) {
+      if (allowedTables && !allowedTables.has(tableName)) {
         continue
       }
 
@@ -97,7 +97,11 @@ export class SpecParser {
       tableMap.set(tableName, existing)
     }
 
-    for (const tableName of Array.from(allowedTables).sort((a, b) => a.localeCompare(b))) {
+    const compatibilityTableNames = allowedTables
+      ? Array.from(allowedTables)
+      : Array.from(tableMap.keys())
+
+    for (const tableName of compatibilityTableNames.sort((a, b) => a.localeCompare(b))) {
       const current =
         tableMap.get(tableName) ??
         ({

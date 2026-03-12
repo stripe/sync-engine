@@ -7,19 +7,23 @@ const PG_IDENTIFIER_MAX_BYTES = 63
 
 type PostgresAdapterOptions = {
   schemaName?: string
-  /** Schema for accounts table (FK target). Defaults to schemaName when not provided. */
+  /** Schema for the sync-owned accounts table (FK target). Defaults to schemaName when not provided. */
   accountSchema?: string
+  /** Sync-owned accounts table name used as the FK target. Defaults to _sync_accounts. */
+  accountTableName?: string
   materializeTemporalAsText?: boolean
 }
 
 export class PostgresAdapter implements DialectAdapter {
   private readonly schemaName: string
   private readonly accountSchema: string
+  private readonly accountTableName: string
   private readonly materializeTemporalAsText: boolean
 
   constructor(options: PostgresAdapterOptions = {}) {
     this.schemaName = options.schemaName ?? 'stripe'
     this.accountSchema = options.accountSchema ?? this.schemaName
+    this.accountTableName = options.accountTableName ?? '_sync_accounts'
     this.materializeTemporalAsText = options.materializeTemporalAsText ?? true
   }
 
@@ -50,13 +54,14 @@ export class PostgresAdapter implements DialectAdapter {
     const fkName = this.safeIdentifier(`fk_${table.tableName}_account`)
     const accountIdxName = this.safeIdentifier(`idx_${table.tableName}_account_id`)
     const quotedAccountSchema = this.quoteIdent(this.accountSchema)
+    const quotedAccountTable = this.quoteIdent(this.accountTableName)
 
     return [
       `CREATE TABLE ${quotedSchema}.${quotedTable} (\n  ${columnDefs.join(',\n  ')}\n);`,
       ...generatedColumnAlters,
       `ALTER TABLE ${quotedSchema}.${quotedTable} ADD CONSTRAINT ${this.quoteIdent(
         fkName
-      )} FOREIGN KEY ("_account_id") REFERENCES ${quotedAccountSchema}."accounts" (id);`,
+      )} FOREIGN KEY ("_account_id") REFERENCES ${quotedAccountSchema}.${quotedAccountTable} (id);`,
       `CREATE INDEX ${this.quoteIdent(accountIdxName)} ON ${quotedSchema}.${quotedTable} ("_account_id");`,
       `DROP TRIGGER IF EXISTS handle_updated_at ON ${quotedSchema}.${quotedTable};`,
       `CREATE TRIGGER handle_updated_at BEFORE UPDATE ON ${quotedSchema}.${quotedTable} FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,

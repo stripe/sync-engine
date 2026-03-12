@@ -13,3 +13,7 @@ private/
 .mcp.*
 .vercel
 .env*.local
+.tmp/
+
+packages/visualizer/public/explorer-data/bootstrap.sql
+packages/visualizer/public/explorer-data/manifest.json

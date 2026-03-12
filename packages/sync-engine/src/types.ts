@@ -47,7 +47,7 @@ export type StripeSyncConfig = {
   schemaName?: string
 
   /**
-   * Postgres schema name for sync metadata tables (accounts, _sync_runs, _managed_webhooks, etc.).
+   * Postgres schema name for sync metadata tables (_sync_accounts, _sync_runs, _managed_webhooks, etc.).
    * Defaults to schemaName when not provided.
    */
   syncTablesSchemaName?: string

@@ -21,6 +21,16 @@ const EXPANDABLE_REFERENCE_TABLE: ParsedResourceTable = {
   columns: [{ name: 'customer', type: 'json', nullable: true, expandableReference: true }],
 }
 
+const ACCOUNT_TABLE: ParsedResourceTable = {
+  tableName: 'accounts',
+  resourceId: 'account',
+  sourceSchemaName: 'account',
+  columns: [
+    { name: 'business_profile', type: 'json', nullable: true },
+    { name: 'charges_enabled', type: 'boolean', nullable: false },
+  ],
+}
+
 describe('PostgresAdapter', () => {
   it('emits deterministic DDL statements with runtime-required metadata columns', () => {
     const adapter = new PostgresAdapter({ schemaName: 'stripe' })
@@ -53,7 +63,7 @@ describe('PostgresAdapter', () => {
       statements.some((stmt) => stmt.includes('ADD COLUMN IF NOT EXISTS "expires_at" text'))
     ).toBe(true)
     expect(statements[5]).toContain(
-      'FOREIGN KEY ("_account_id") REFERENCES "stripe"."accounts" (id)'
+      'FOREIGN KEY ("_account_id") REFERENCES "stripe"."_sync_accounts" (id)'
     )
     expect(statements[7]).toContain('DROP TRIGGER IF EXISTS handle_updated_at')
     expect(statements[8]).toContain('EXECUTE FUNCTION set_updated_at()')
@@ -83,7 +93,28 @@ describe('PostgresAdapter', () => {
     const statements = adapter.buildAllStatements([SAMPLE_TABLE])
     expect(statements[0]).toContain('CREATE TABLE "stripe_data"."customers"')
     expect(statements[5]).toContain(
-      'FOREIGN KEY ("_account_id") REFERENCES "stripe_sync"."accounts" (id)'
+      'FOREIGN KEY ("_account_id") REFERENCES "stripe_sync"."_sync_accounts" (id)'
+    )
+  })
+
+  it('creates projected accounts like any other resource table', () => {
+    const adapter = new PostgresAdapter({ schemaName: 'stripe' })
+    const statements = adapter.buildAllStatements([ACCOUNT_TABLE])
+
+    expect(statements).toHaveLength(7)
+    expect(statements[0]).toContain('CREATE TABLE "stripe"."accounts"')
+    expect(statements[0]).toContain('"_account_id" text NOT NULL')
+    expect(statements[0]).toContain(
+      '"business_profile" jsonb GENERATED ALWAYS AS ((_raw_data->\'business_profile\')::jsonb) STORED'
+    )
+    expect(statements[1]).toBe(
+      `ALTER TABLE "stripe"."accounts" ADD COLUMN IF NOT EXISTS "business_profile" jsonb GENERATED ALWAYS AS ((_raw_data->'business_profile')::jsonb) STORED;`
+    )
+    expect(statements[2]).toBe(
+      `ALTER TABLE "stripe"."accounts" ADD COLUMN IF NOT EXISTS "charges_enabled" boolean GENERATED ALWAYS AS ((NULLIF(_raw_data->>'charges_enabled', ''))::boolean) STORED;`
+    )
+    expect(statements[3]).toContain(
+      'FOREIGN KEY ("_account_id") REFERENCES "stripe"."_sync_accounts" (id)'
     )
   })
 })

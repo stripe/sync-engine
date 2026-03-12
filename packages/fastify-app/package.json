@@ -27,7 +27,7 @@
     "stripe-experiment-sync": "workspace:*"
   },
   "devDependencies": {
-    "@types/pg": "^8.15.2",
+    "@types/pg": "^8.18.0",
     "@types/node": "^24.5.0",
     "tsx": "^4.20.5",
     "vitest": "^3.2.4"
