@@ -1,4 +1,5 @@
 -- Internal sync metadata schema bootstrap for OpenAPI runtime.
+-- Schema-qualified objects use the explicit {{sync_schema}} placeholder.
 -- Uses idempotent DDL so it can be safely re-run.
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -29,7 +30,7 @@ BEGIN
 END;
 $$;
 
-CREATE TABLE IF NOT EXISTS "stripe"."accounts" (
+CREATE TABLE IF NOT EXISTS {{sync_schema}}."accounts" (
   "_raw_data" jsonb NOT NULL,
   "id" text GENERATED ALWAYS AS ((_raw_data->>'id')::text) STORED,
   "api_key_hashes" text[] NOT NULL DEFAULT '{}',
@@ -39,13 +40,13 @@ CREATE TABLE IF NOT EXISTS "stripe"."accounts" (
   PRIMARY KEY ("id")
 );
 CREATE INDEX IF NOT EXISTS "idx_accounts_api_key_hashes"
-  ON "stripe"."accounts" USING GIN ("api_key_hashes");
-DROP TRIGGER IF EXISTS handle_updated_at ON "stripe"."accounts";
+  ON {{sync_schema}}."accounts" USING GIN ("api_key_hashes");
+DROP TRIGGER IF EXISTS handle_updated_at ON {{sync_schema}}."accounts";
 CREATE TRIGGER handle_updated_at
-BEFORE UPDATE ON "stripe"."accounts"
+BEFORE UPDATE ON {{sync_schema}}."accounts"
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-CREATE TABLE IF NOT EXISTS "stripe"."_managed_webhooks" (
+CREATE TABLE IF NOT EXISTS {{sync_schema}}."_managed_webhooks" (
   "id" text PRIMARY KEY,
   "object" text,
   "url" text NOT NULL,
@@ -62,25 +63,25 @@ CREATE TABLE IF NOT EXISTS "stripe"."_managed_webhooks" (
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   "account_id" text NOT NULL
 );
-ALTER TABLE "stripe"."_managed_webhooks"
+ALTER TABLE {{sync_schema}}."_managed_webhooks"
   DROP CONSTRAINT IF EXISTS "managed_webhooks_url_account_unique";
-ALTER TABLE "stripe"."_managed_webhooks"
+ALTER TABLE {{sync_schema}}."_managed_webhooks"
   ADD CONSTRAINT "managed_webhooks_url_account_unique" UNIQUE ("url", "account_id");
-ALTER TABLE "stripe"."_managed_webhooks"
+ALTER TABLE {{sync_schema}}."_managed_webhooks"
   DROP CONSTRAINT IF EXISTS "fk_managed_webhooks_account";
-ALTER TABLE "stripe"."_managed_webhooks"
+ALTER TABLE {{sync_schema}}."_managed_webhooks"
   ADD CONSTRAINT "fk_managed_webhooks_account"
-    FOREIGN KEY ("account_id") REFERENCES "stripe"."accounts" (id);
+    FOREIGN KEY ("account_id") REFERENCES {{sync_schema}}."accounts" (id);
 CREATE INDEX IF NOT EXISTS "idx_managed_webhooks_status"
-  ON "stripe"."_managed_webhooks" ("status");
+  ON {{sync_schema}}."_managed_webhooks" ("status");
 CREATE INDEX IF NOT EXISTS "idx_managed_webhooks_enabled"
-  ON "stripe"."_managed_webhooks" ("enabled");
-DROP TRIGGER IF EXISTS handle_updated_at ON "stripe"."_managed_webhooks";
+  ON {{sync_schema}}."_managed_webhooks" ("enabled");
+DROP TRIGGER IF EXISTS handle_updated_at ON {{sync_schema}}."_managed_webhooks";
 CREATE TRIGGER handle_updated_at
-BEFORE UPDATE ON "stripe"."_managed_webhooks"
+BEFORE UPDATE ON {{sync_schema}}."_managed_webhooks"
 FOR EACH ROW EXECUTE FUNCTION set_updated_at_metadata();
 
-CREATE TABLE IF NOT EXISTS "stripe"."_sync_runs" (
+CREATE TABLE IF NOT EXISTS {{sync_schema}}."_sync_runs" (
   "_account_id" text NOT NULL,
   "started_at" timestamptz NOT NULL DEFAULT now(),
   "closed_at" timestamptz,
@@ -90,31 +91,31 @@ CREATE TABLE IF NOT EXISTS "stripe"."_sync_runs" (
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY ("_account_id", "started_at")
 );
-ALTER TABLE "stripe"."_sync_runs"
+ALTER TABLE {{sync_schema}}."_sync_runs"
   ADD COLUMN IF NOT EXISTS "error_message" text;
-ALTER TABLE "stripe"."_sync_runs"
+ALTER TABLE {{sync_schema}}."_sync_runs"
   DROP CONSTRAINT IF EXISTS "fk_sync_runs_account";
-ALTER TABLE "stripe"."_sync_runs"
+ALTER TABLE {{sync_schema}}."_sync_runs"
   ADD CONSTRAINT "fk_sync_runs_account"
-    FOREIGN KEY ("_account_id") REFERENCES "stripe"."accounts" (id);
-ALTER TABLE "stripe"."_sync_runs"
+    FOREIGN KEY ("_account_id") REFERENCES {{sync_schema}}."accounts" (id);
+ALTER TABLE {{sync_schema}}."_sync_runs"
   DROP CONSTRAINT IF EXISTS one_active_run_per_account;
-ALTER TABLE "stripe"."_sync_runs"
+ALTER TABLE {{sync_schema}}."_sync_runs"
   DROP CONSTRAINT IF EXISTS one_active_run_per_account_triggered_by;
-ALTER TABLE "stripe"."_sync_runs"
+ALTER TABLE {{sync_schema}}."_sync_runs"
   ADD CONSTRAINT one_active_run_per_account_triggered_by
   EXCLUDE (
     "_account_id" WITH =,
     COALESCE(triggered_by, 'default') WITH =
   ) WHERE (closed_at IS NULL);
-DROP TRIGGER IF EXISTS handle_updated_at ON "stripe"."_sync_runs";
+DROP TRIGGER IF EXISTS handle_updated_at ON {{sync_schema}}."_sync_runs";
 CREATE TRIGGER handle_updated_at
-BEFORE UPDATE ON "stripe"."_sync_runs"
+BEFORE UPDATE ON {{sync_schema}}."_sync_runs"
 FOR EACH ROW EXECUTE FUNCTION set_updated_at_metadata();
 CREATE INDEX IF NOT EXISTS "idx_sync_runs_account_status"
-  ON "stripe"."_sync_runs" ("_account_id", "closed_at");
+  ON {{sync_schema}}."_sync_runs" ("_account_id", "closed_at");
 
-CREATE TABLE IF NOT EXISTS "stripe"."_sync_obj_runs" (
+CREATE TABLE IF NOT EXISTS {{sync_schema}}."_sync_obj_runs" (
   "_account_id" text NOT NULL,
   "run_started_at" timestamptz NOT NULL,
   "object" text NOT NULL,
@@ -132,38 +133,38 @@ CREATE TABLE IF NOT EXISTS "stripe"."_sync_obj_runs" (
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY ("_account_id", "run_started_at", "object", "created_gte", "created_lte")
 );
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   ADD COLUMN IF NOT EXISTS "page_cursor" text;
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   ADD COLUMN IF NOT EXISTS "created_gte" integer NOT NULL DEFAULT 0;
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   ADD COLUMN IF NOT EXISTS "created_lte" integer NOT NULL DEFAULT 0;
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   ADD COLUMN IF NOT EXISTS "priority" integer NOT NULL DEFAULT 0;
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   ADD COLUMN IF NOT EXISTS "error_message" text;
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   DROP CONSTRAINT IF EXISTS "fk_sync_obj_runs_parent";
-ALTER TABLE "stripe"."_sync_obj_runs"
+ALTER TABLE {{sync_schema}}."_sync_obj_runs"
   ADD CONSTRAINT "fk_sync_obj_runs_parent"
     FOREIGN KEY ("_account_id", "run_started_at")
-    REFERENCES "stripe"."_sync_runs" ("_account_id", "started_at");
-DROP TRIGGER IF EXISTS handle_updated_at ON "stripe"."_sync_obj_runs";
+    REFERENCES {{sync_schema}}."_sync_runs" ("_account_id", "started_at");
+DROP TRIGGER IF EXISTS handle_updated_at ON {{sync_schema}}."_sync_obj_runs";
 CREATE TRIGGER handle_updated_at
-BEFORE UPDATE ON "stripe"."_sync_obj_runs"
+BEFORE UPDATE ON {{sync_schema}}."_sync_obj_runs"
 FOR EACH ROW EXECUTE FUNCTION set_updated_at_metadata();
 CREATE INDEX IF NOT EXISTS "idx_sync_obj_runs_status"
-  ON "stripe"."_sync_obj_runs" ("_account_id", "run_started_at", "status");
+  ON {{sync_schema}}."_sync_obj_runs" ("_account_id", "run_started_at", "status");
 CREATE INDEX IF NOT EXISTS "idx_sync_obj_runs_priority"
-  ON "stripe"."_sync_obj_runs" ("_account_id", "run_started_at", "status", "priority");
+  ON {{sync_schema}}."_sync_obj_runs" ("_account_id", "run_started_at", "status", "priority");
 
-CREATE TABLE IF NOT EXISTS "stripe"."_rate_limits" (
+CREATE TABLE IF NOT EXISTS {{sync_schema}}."_rate_limits" (
   key TEXT PRIMARY KEY,
   count INTEGER NOT NULL DEFAULT 0,
   window_start TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE OR REPLACE FUNCTION "stripe".check_rate_limit(
+CREATE OR REPLACE FUNCTION {{sync_schema}}.check_rate_limit(
   rate_key TEXT,
   max_requests INTEGER,
   window_seconds INTEGER
@@ -176,7 +177,7 @@ DECLARE
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtext(rate_key));
 
-  INSERT INTO "stripe"."_rate_limits" (key, count, window_start)
+  INSERT INTO {{sync_schema}}."_rate_limits" (key, count, window_start)
   VALUES (rate_key, 1, now)
   ON CONFLICT (key) DO UPDATE
   SET count = CASE
@@ -190,7 +191,7 @@ BEGIN
                          ELSE "_rate_limits".window_start
                      END;
 
-  SELECT count INTO current_count FROM "stripe"."_rate_limits" WHERE key = rate_key;
+  SELECT count INTO current_count FROM {{sync_schema}}."_rate_limits" WHERE key = rate_key;
 
   IF current_count > max_requests THEN
     RAISE EXCEPTION 'Rate limit exceeded for %', rate_key;
@@ -198,7 +199,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE VIEW "stripe"."sync_runs" AS
+CREATE OR REPLACE VIEW {{sync_schema}}."sync_runs" AS
 SELECT
   r._account_id as account_id,
   r.started_at,
@@ -219,14 +220,14 @@ SELECT
     WHEN COUNT(*) FILTER (WHERE o.status = 'error') > 0 THEN 'error'
     ELSE 'complete'
   END as status
-FROM "stripe"."_sync_runs" r
-LEFT JOIN "stripe"."_sync_obj_runs" o
+FROM {{sync_schema}}."_sync_runs" r
+LEFT JOIN {{sync_schema}}."_sync_obj_runs" o
   ON o._account_id = r._account_id
   AND o.run_started_at = r.started_at
 GROUP BY r._account_id, r.started_at, r.closed_at, r.triggered_by, r.max_concurrent;
 
-DROP FUNCTION IF EXISTS "stripe"."sync_obj_progress"(TEXT, TIMESTAMPTZ);
-CREATE OR REPLACE VIEW "stripe"."sync_obj_progress" AS
+DROP FUNCTION IF EXISTS {{sync_schema}}."sync_obj_progress"(TEXT, TIMESTAMPTZ);
+CREATE OR REPLACE VIEW {{sync_schema}}."sync_obj_progress" AS
 SELECT
   r."_account_id" AS account_id,
   r.run_started_at,
@@ -236,10 +237,10 @@ SELECT
     1
   ) AS pct_complete,
   COALESCE(SUM(r.processed_count), 0) AS processed
-FROM "stripe"."_sync_obj_runs" r
+FROM {{sync_schema}}."_sync_obj_runs" r
 WHERE r.run_started_at = (
   SELECT MAX(s.started_at)
-  FROM "stripe"."_sync_runs" s
+  FROM {{sync_schema}}."_sync_runs" s
   WHERE s."_account_id" = r."_account_id"
 )
 GROUP BY r."_account_id", r.run_started_at, r.object;

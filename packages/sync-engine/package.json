@@ -48,7 +48,6 @@
     "inquirer": "^12.3.0",
     "papaparse": "5.4.1",
     "pg": "^8.16.3",
-    "pg-node-migrations": "0.0.8",
     "stripe": "^17.7.0",
     "supabase-management-js": "^2.0.2",
     "ws": "^8.18.0",

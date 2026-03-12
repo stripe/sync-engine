@@ -537,7 +537,7 @@ describe('SupabaseDeployClient', () => {
       expect(installed).toBe(true)
     })
 
-    it('should work with custom schema name', async () => {
+    it('should work with a non-default schema name', async () => {
       const client = new SupabaseSetupClient({
         accessToken: mockAccessToken,
         projectRef: mockProjectRef,
@@ -556,7 +556,7 @@ describe('SupabaseDeployClient', () => {
       const installed = await client.isInstalled('custom_schema')
 
       expect(installed).toBe(true)
-      // Verify the SQL queries included the custom schema name
+      // Verify the SQL queries included the configured non-default schema name.
       expect(mockRunSQL).toHaveBeenCalledWith(expect.stringContaining('custom_schema'))
     })
 

@@ -1,5 +1,4 @@
 import { Client } from 'pg'
-import { migrate } from 'pg-node-migrations'
 import { Buffer } from 'node:buffer'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -8,6 +7,7 @@ import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import type { ConnectionOptions } from 'node:tls'
 import type { Logger } from '../types'
+import { renderMigrationTemplate } from './migrationTemplate'
 import { SIGMA_INGESTION_CONFIGS } from '../sigma/sigmaIngestionConfigs'
 import type { SigmaIngestionConfig } from '../sigma/sigmaIngestion'
 import {
@@ -148,31 +148,6 @@ async function cleanupSchema(client: Client, schema: string, logger?: Logger): P
   logger?.info(`Schema "${schema}" has been reset`)
 }
 
-async function connectAndMigrate(
-  client: Client,
-  migrationsDirectory: string,
-  schemaName: string,
-  config: MigrationConfig,
-  logOnError = true
-): Promise<void> {
-  if (!fs.existsSync(migrationsDirectory)) {
-    throw new Error(`Migrations directory not found. ${migrationsDirectory} does not exist.`)
-  }
-
-  const optionalConfig = {
-    schemaName,
-    tableName: '_migrations',
-  }
-
-  try {
-    await migrate({ client }, migrationsDirectory, optionalConfig)
-  } catch (error) {
-    if (logOnError && error instanceof Error) {
-      config.logger?.error(error, 'Migration error:')
-    }
-    throw error
-  }
-}
 async function fetchTableMetadata(client: Client, schema: string, table: string) {
   const colsResult = await client.query(
     `
@@ -452,7 +427,8 @@ async function applyOpenApiSchema(
     'Resolved Stripe OpenAPI spec'
   )
 
-  // Ensure _migrations exists (bootstrap creates it; may use pg-node-migrations format)
+  // Ensure _migrations exists (the migration runner creates it; legacy installs may use
+  // the older migration-table shape).
   const migrationsExists = await doesTableExist(client, syncSchema, '_migrations')
   if (!migrationsExists) {
     throw new Error(`_migrations table not found in schema "${syncSchema}". Run bootstrap first.`)
@@ -519,78 +495,16 @@ async function applyOpenApiSchema(
 }
 
 export async function runMigrations(config: MigrationConfig): Promise<void> {
-  const client = new Client({
-    connectionString: config.databaseUrl,
-    ssl: config.ssl,
-    connectionTimeoutMillis: 10_000,
-  })
-  const dataSchema = config.schemaName ?? 'stripe'
-  const syncSchema = config.syncTablesSchemaName ?? dataSchema
   const migrationsDirectory = path.resolve(__dirname, './migrations')
-  const defaultSchema = 'stripe'
-
-  if (dataSchema !== defaultSchema || syncSchema !== defaultSchema) {
-    throw new Error(
-      `Custom schema migrations are no longer supported. Use "${defaultSchema}" for both schemaName and syncTablesSchemaName.`
-    )
-  }
-
-  try {
-    await client.connect()
-    await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(defaultSchema)}`)
-    await renameMigrationsTableIfNeeded(client, syncSchema, config.logger)
-
-    const tableExists = await doesTableExist(client, syncSchema, '_migrations')
-    if (tableExists) {
-      const migrationCount = await client.query(
-        `SELECT COUNT(*) as count FROM "${syncSchema}"."_migrations"`
-      )
-      const isEmpty = migrationCount.rows[0]?.count === '0'
-      if (isEmpty) {
-        await cleanupSchema(client, syncSchema, config.logger)
-      } else if (fs.existsSync(migrationsDirectory)) {
-        const initialFile = fs
-          .readdirSync(migrationsDirectory)
-          .filter((f) => f.endsWith('.sql'))
-          .sort()
-          .find((f) => parseMigrationId(f) === 0)
-        if (initialFile) {
-          const initialSql = fs.readFileSync(path.join(migrationsDirectory, initialFile), 'utf8')
-          const expectedHash = computeMigrationHash(initialFile, initialSql)
-          const result = await client.query(
-            `SELECT hash FROM "${syncSchema}"."_migrations" WHERE id = 0`
-          )
-          if (result.rows.length > 0 && result.rows[0].hash !== expectedHash) {
-            config.logger?.warn(
-              'Initial migration (0) hash changed — resetting schema to reapply from scratch'
-            )
-            await cleanupSchema(client, syncSchema, config.logger)
-          }
-        }
-      }
-    }
-
-    if (!fs.existsSync(migrationsDirectory)) {
-      throw new Error(`Migrations directory not found. ${migrationsDirectory} does not exist.`)
-    }
-    config.logger?.info({ migrationsDirectory }, 'Running SQL migrations from directory')
-    await connectAndMigrate(client, migrationsDirectory, syncSchema, config, true)
-
-    await applyOpenApiSchema(client, config, dataSchema, syncSchema)
-
-    if (config.enableSigma) {
-      await migrateSigmaSchema(client, config, 'sigma', syncSchema)
-    }
-  } catch (err) {
-    config.logger?.error(err, 'Error running migrations')
-    throw err
-  } finally {
-    await client.end()
-    config.logger?.info('Finished migrations')
-  }
+  const migrations = loadMigrationsFromDirectory(migrationsDirectory)
+  config.logger?.info(
+    { migrationsDirectory, migrationCount: migrations.length },
+    'Loaded bootstrap migrations from directory'
+  )
+  await runMigrationsWithContent(config, migrations)
 }
 
-// Helper to parse migration ID from filename (matches pg-node-migrations behavior)
+// Helper to parse migration ID from filename (matches the historical migration filename convention)
 function parseMigrationId(fileName: string): number {
   const match = /^(-?\d+)[-_]?/.exec(fileName)
   if (!match) {
@@ -599,7 +513,7 @@ function parseMigrationId(fileName: string): number {
   return parseInt(match[1], 10)
 }
 
-// Helper to compute hash matching pg-node-migrations format
+// Helper to compute hash using the historical fileName+sql SHA-1 convention
 function computeMigrationHash(fileName: string, sql: string): string {
   return crypto
     .createHash('sha1')
@@ -625,6 +539,36 @@ function parseMigrations(migrations: EmbeddedMigration[]): ParsedMigration[] {
       hash: computeMigrationHash(migration.name, migration.sql),
     }))
     .sort((a, b) => a.id - b.id)
+}
+
+function loadMigrationsFromDirectory(migrationsDirectory: string): EmbeddedMigration[] {
+  if (!fs.existsSync(migrationsDirectory)) {
+    throw new Error(`Migrations directory not found. ${migrationsDirectory} does not exist.`)
+  }
+
+  return fs
+    .readdirSync(migrationsDirectory)
+    .filter((fileName) => fileName.endsWith('.sql'))
+    .sort()
+    .map((fileName) => ({
+      name: fileName,
+      sql: fs.readFileSync(path.join(migrationsDirectory, fileName), 'utf8'),
+    }))
+}
+
+function renderBootstrapMigrations(
+  migrations: EmbeddedMigration[],
+  syncSchema: string
+): EmbeddedMigration[] {
+  return migrations.map((migration) => ({
+    ...migration,
+    sql: renderMigrationTemplate(migration.sql, { syncSchema }),
+  }))
+}
+
+function buildSearchPath(...schemas: string[]): string {
+  const uniqueSchemas = [...new Set(schemas.filter((schema) => schema.length > 0))]
+  return [...uniqueSchemas.map(quoteIdentifier), 'public'].join(', ')
 }
 
 async function ensureMigrationsTable(
@@ -680,11 +624,7 @@ async function runMigration(
   }
 }
 
-/**
- * Run migrations from embedded content (for edge runtimes without filesystem migrations access).
- * This is compatible with pg-node-migrations table format.
- */
-export async function runMigrationsFromContent(
+async function runMigrationsWithContent(
   config: MigrationConfig,
   migrations: EmbeddedMigration[]
 ): Promise<void> {
@@ -695,19 +635,30 @@ export async function runMigrationsFromContent(
   })
   const dataSchema = config.schemaName ?? 'stripe'
   const syncSchema = config.syncTablesSchemaName ?? dataSchema
-  const defaultSchema = 'stripe'
   const tableName = '_migrations'
+  const parsedMigrations = parseMigrations(renderBootstrapMigrations(migrations, syncSchema))
 
-  if (dataSchema !== defaultSchema || syncSchema !== defaultSchema) {
+  // In this codepath, a "custom schema name" means using one non-default schema name
+  // instead of "stripe". It does not mean split data and metadata schemas.
+  // todo: split-schema (different data and sync-metadata schemas) is not yet supported
+  // because several internal SQL statements mix the two without proper parameterisation.
+  if (dataSchema !== syncSchema) {
     throw new Error(
-      `Custom schema migrations are no longer supported. Use "${defaultSchema}" for both schemaName and syncTablesSchemaName.`
+      `Split schema configuration is not supported: schemaName ("${dataSchema}") and ` +
+        `syncTablesSchemaName ("${syncSchema}") must be the same value.`
     )
   }
 
   try {
-    config.logger?.info('Starting migrations (from embedded content)')
+    config.logger?.info(
+      { migrationCount: parsedMigrations.length },
+      'Starting migrations from content'
+    )
     await client.connect()
-    await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(defaultSchema)}`)
+    for (const schema of new Set([syncSchema, dataSchema])) {
+      await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdentifier(schema)}`)
+    }
+    await client.query(`SET search_path TO ${buildSearchPath(syncSchema)}`)
     await renameMigrationsTableIfNeeded(client, syncSchema, config.logger)
 
     const tableExists = await doesTableExist(client, syncSchema, tableName)
@@ -724,10 +675,8 @@ export async function runMigrationsFromContent(
     await ensureMigrationsTable(client, syncSchema, tableName)
 
     let appliedMigrations = await getAppliedMigrations(client, syncSchema, tableName)
-    const parsedMigrations = parseMigrations(migrations)
-
-    const appliedInitial = appliedMigrations.find((m) => m.id === 0)
-    const intendedInitial = parsedMigrations.find((m) => m.id === 0)
+    const appliedInitial = appliedMigrations.find((migration) => migration.id === 0)
+    const intendedInitial = parsedMigrations.find((migration) => migration.id === 0)
     if (appliedInitial && intendedInitial && appliedInitial.hash !== intendedInitial.hash) {
       config.logger?.warn(
         'Initial migration (0) hash changed — resetting schema to reapply from scratch'
@@ -760,16 +709,28 @@ export async function runMigrationsFromContent(
       config.logger?.info(`Successfully applied ${pendingMigrations.length} migration(s)`)
     }
 
+    await client.query(`SET search_path TO ${buildSearchPath(dataSchema, syncSchema)}`)
     await applyOpenApiSchema(client, config, dataSchema, syncSchema)
 
     if (config.enableSigma) {
       await migrateSigmaSchema(client, config, 'sigma', syncSchema)
     }
   } catch (err) {
-    config.logger?.error(err, 'Error running migrations from content')
+    config.logger?.error(err, 'Error running migrations')
     throw err
   } finally {
     await client.end()
     config.logger?.info('Finished migrations')
   }
+}
+
+/**
+ * Run migrations from embedded content (for edge runtimes without filesystem migrations access).
+ * This uses the same in-memory execution path as the Node bootstrap runner.
+ */
+export async function runMigrationsFromContent(
+  config: MigrationConfig,
+  migrations: EmbeddedMigration[]
+): Promise<void> {
+  await runMigrationsWithContent(config, migrations)
 }

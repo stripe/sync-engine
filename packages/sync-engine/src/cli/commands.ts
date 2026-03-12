@@ -428,6 +428,10 @@ export async function fullSyncCommand(
       autoExpandLists: process.env.AUTO_EXPAND_LISTS === 'true',
       backfillRelatedEntities: process.env.BACKFILL_RELATED_ENTITIES !== 'false',
       poolConfig,
+      ...(process.env.SYNC_SCHEMA_NAME ? { schemaName: process.env.SYNC_SCHEMA_NAME } : {}),
+      ...(process.env.SYNC_TABLES_SCHEMA_NAME
+        ? { syncTablesSchemaName: process.env.SYNC_TABLES_SCHEMA_NAME }
+        : {}),
     })
 
     const completedRun = await stripeSync.postgresClient.getCompletedRun(

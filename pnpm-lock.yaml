@@ -149,9 +149,6 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
-      pg-node-migrations:
-        specifier: 0.0.8
-        version: 0.0.8
       stripe:
         specifier: ^17.7.0
         version: 17.7.0
@@ -2563,11 +2560,6 @@ packages:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
 
-  pg-node-migrations@0.0.8:
-    resolution: {integrity: sha512-44cMl9umOmCv0hzZyEcvjEq8Bm8u7mrzggZ06qXTJVSsMMB4j2OsjG+rSp+uzeKWyP2Vu0K9Ye2wKtjFUJwrdw==}
-    engines: {node: '>10.17.0'}
-    hasBin: true
-
   pg-pool@3.10.1:
     resolution: {integrity: sha512-Tu8jMlcX+9d8+QVzKIvM/uJtp07PKr82IUOYEphaWcoBhIYkoHpLXN3qO59nAI11ripznDsEzEv8nUxBVWajGg==}
     peerDependencies:
@@ -2874,10 +2866,6 @@ packages:
   split2@4.2.0:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
     engines: {node: '>= 10.x'}
-
-  sql-template-strings@2.2.2:
-    resolution: {integrity: sha512-UXhXR2869FQaD+GMly8jAMCRZ94nU5KcrFetZfWEMd+LVVG6y0ExgHAhatEcKZ/wk8YcKPdi+hiD2wm75lq3/Q==}
-    engines: {node: '>=4.0.0'}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -5347,13 +5335,6 @@ snapshots:
 
   pg-int8@1.0.1: {}
 
-  pg-node-migrations@0.0.8:
-    dependencies:
-      pg: 8.16.3
-      sql-template-strings: 2.2.2
-    transitivePeerDependencies:
-      - pg-native
-
   pg-pool@3.10.1(pg@8.16.3):
     dependencies:
       pg: 8.16.3
@@ -5717,8 +5698,6 @@ snapshots:
       whatwg-url: 7.1.0
 
   split2@4.2.0: {}
-
-  sql-template-strings@2.2.2: {}
 
   stackback@0.0.2: {}
 
