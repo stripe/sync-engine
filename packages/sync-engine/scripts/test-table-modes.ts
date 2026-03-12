@@ -38,11 +38,10 @@ async function main() {
   console.log(`Table names: ${runtimeRequiredSpec.tables.map((t) => t.tableName).join(', ')}`)
   console.log()
 
-  // Test all_projected mode (omit allowedTables per the interface documentation)
+  // Test all_projected mode (omit allowedTables to parse all resolvable x-resourceId entries)
   const allProjectedSpec = parser.parse(resolvedSpec.spec, {
     resourceAliases: OPENAPI_RESOURCE_TABLE_ALIASES,
-    // No allowedTables property - per types.ts: "If omitted, all resolvable x-resourceId entries are parsed"
-    // Note: Current implementation defaults to RUNTIME_REQUIRED_TABLES when omitted
+    // No allowedTables property - all resolvable x-resourceId entries are parsed
   })
 
   console.log('=== all_projected mode ===')
@@ -67,12 +66,6 @@ async function main() {
     additionalTables.forEach((name) => console.log(`  - ${name}`))
   } else {
     console.log('No additional tables found in all_projected mode.')
-    console.log(
-      'Note: The SpecParser defaults to RUNTIME_REQUIRED_TABLES when allowedTables is omitted.'
-    )
-    console.log(
-      'This means the parser scope may be the actual bottleneck, not the migration filtering.'
-    )
   }
 }
 
