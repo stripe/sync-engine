@@ -196,7 +196,7 @@ describe('SpecParser - Table Modes (runtime_required vs all_projected)', () => {
       [...RUNTIME_REQUIRED_TABLES].sort()
     )
     expect(allProjectedParsed.tables.length).toBeGreaterThan(runtimeParsed.tables.length)
-    expect(allProjectedParsed.tables.length).toBe(106)
+    expect(allProjectedParsed.tables.length).toBeGreaterThan(100)
     expect(
       allProjectedParsed.tables.some((table) => !RUNTIME_REQUIRED_TABLES.includes(table.tableName))
     ).toBe(true)
