@@ -27,7 +27,7 @@ const sql = postgres(dbUrl, { max: 1, prepare: false })
 const stripeSync = await StripeSync.create({
   poolConfig: { connectionString: dbUrl, max: 1 },
   stripeSecretKey: Deno.env.get('STRIPE_SECRET_KEY')!,
-  enableSigma: (Deno.env.get('ENABLE_SIGMA') ?? 'false') === 'true',
+  enableSigma: false,
   partnerId: 'pp_supabase',
   schemaName,
   syncTablesSchemaName,
