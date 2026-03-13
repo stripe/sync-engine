@@ -1,7 +1,7 @@
 # Stripe Sync Engine
 
 ![GitHub License](https://img.shields.io/github/license/stripe-experiments/sync-engine)
-![NPM Version](https://img.shields.io/npm/v/@stripe/sync-engine)
+![NPM Version](https://img.shields.io/npm/v/@stripe%2Fsync-engine)
 
 Sync Stripe data into PostgreSQL from the command line.
 
