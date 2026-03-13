@@ -1,4 +1,4 @@
-import type { RevalidateEntity } from 'stripe-experiment-sync'
+import type { RevalidateEntity } from '@stripe/sync-engine'
 import { config } from 'dotenv'
 import type { ConnectionOptions } from 'node:tls'
 

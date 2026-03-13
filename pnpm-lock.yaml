@@ -54,6 +54,9 @@ importers:
 
   packages/dashboard:
     dependencies:
+      '@stripe/sync-engine':
+        specifier: workspace:*
+        version: link:../sync-engine
       '@supabase/supabase-js':
         specifier: ^2
         version: 2.86.2
@@ -66,9 +69,6 @@ importers:
       react-dom:
         specifier: ^19
         version: 19.2.1(react@19.2.1)
-      stripe-experiment-sync:
-        specifier: workspace:*
-        version: link:../sync-engine
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -94,6 +94,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.3
         version: 5.2.3
+      '@stripe/sync-engine':
+        specifier: workspace:*
+        version: link:../sync-engine
       dotenv:
         specifier: ^17.2.2
         version: 17.2.3
@@ -103,9 +106,6 @@ importers:
       stripe:
         specifier: ^19.0.0
         version: 19.3.0(@types/node@24.10.0)
-      stripe-experiment-sync:
-        specifier: workspace:*
-        version: link:../sync-engine
     devDependencies:
       '@types/node':
         specifier: ^24.5.0
@@ -4327,13 +4327,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.2.2(@types/node@24.10.1)(tsx@4.20.6)(yaml@2.8.1))':
+  '@vitest/mocker@3.2.4(vite@7.2.2(@types/node@24.10.0)(tsx@4.20.6)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.19
     optionalDependencies:
-      vite: 7.2.2(@types/node@24.10.1)(tsx@4.20.6)(yaml@2.8.1)
+      vite: 7.2.2(@types/node@24.10.0)(tsx@4.20.6)(yaml@2.8.1)
 
   '@vitest/mocker@3.2.4(vite@7.2.2(@types/node@24.10.1)(tsx@4.21.0)(yaml@2.8.1))':
     dependencies:
@@ -6003,7 +6003,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.2(@types/node@24.10.1)(tsx@4.21.0)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.2(@types/node@24.10.0)(tsx@4.20.6)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -6044,7 +6044,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.2(@types/node@24.10.1)(tsx@4.20.6)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.2(@types/node@24.10.1)(tsx@4.21.0)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4

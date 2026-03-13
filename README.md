@@ -1,11 +1,11 @@
 # Stripe Sync Engine Monorepo
 
 ![GitHub License](https://img.shields.io/github/license/stripe-experiments/sync-engine)
-![NPM Version](https://img.shields.io/npm/v/stripe-experiment-sync)
+![NPM Version](https://img.shields.io/npm/v/@stripe%2Fsync-engine)
 
 This monorepo contains packages for synchronizing your Stripe account with a PostgreSQL database:
 
-- [`stripe-experiment-sync`](./packages/sync-engine/README.md): A TypeScript library for syncing Stripe data to PostgreSQL with managed webhooks, CLI tools, and Supabase Edge Function deployment.
+- [`@stripe/sync-engine`](./packages/sync-engine/README.md): A TypeScript library for syncing Stripe data to PostgreSQL with managed webhooks, CLI tools, and Supabase Edge Function deployment.
 - [`stripe-sync-fastify`](./packages/fastify-app/README.md): A Fastify-based server and Docker image for production deployments.
 
 ![Sync Stripe with PostgreSQL](./docs/stripe-sync-engine.jpg)
@@ -19,7 +19,7 @@ The easiest way to sync Stripe data to PostgreSQL is using the CLI. It will run 
 ### CLI (Webhook Mode)
 
 ```bash
-npx stripe-experiment-sync sync \
+npx @stripe/sync-engine sync \
   --stripe-key $STRIPE_API_KEY \
   --database-url $DATABASE_URL \
   --listen-mode webhook \
@@ -29,7 +29,7 @@ npx stripe-experiment-sync sync \
 ### CLI (Websocket Mode)
 
 ```bash
-npx stripe-experiment-sync sync \
+npx @stripe/sync-engine sync \
   --stripe-key $STRIPE_API_KEY \
   --database-url $DATABASE_URL \
   --listen-mode websocket
@@ -40,7 +40,7 @@ npx stripe-experiment-sync sync \
 Deploy to Supabase for serverless operation:
 
 ```bash
-npx stripe-experiment-sync supabase install \
+npx @stripe/sync-engine supabase install \
   --token $SUPABASE_ACCESS_TOKEN \
   --project $SUPABASE_PROJECT_REF \
   --stripe-key $STRIPE_API_KEY
@@ -78,7 +78,7 @@ npx stripe-experiment-sync supabase install \
 
 ## Packages
 
-- [Library & CLI: stripe-experiment-sync](./packages/sync-engine/README.md)
+- [Library & CLI: @stripe/sync-engine](./packages/sync-engine/README.md)
 - [Docker/Server: stripe-sync-fastify](./packages/fastify-app/README.md)
 
 Each package has its own README with installation, configuration, and usage instructions.

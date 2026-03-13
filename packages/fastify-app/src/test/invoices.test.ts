@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import { StripeSync, runMigrations } from 'stripe-experiment-sync'
+import { StripeSync, runMigrations } from '@stripe/sync-engine'
 import { vitest, beforeAll, describe, test, expect } from 'vitest'
 import { getConfig } from '../utils/config'
 import { mockStripe } from './helpers/mockStripe'

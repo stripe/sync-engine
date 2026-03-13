@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { install } from 'stripe-experiment-sync/supabase'
+import { install } from '@stripe/sync-engine/supabase'
 import { createSession } from '@/lib/sessions'
 
 interface DeployRequest {

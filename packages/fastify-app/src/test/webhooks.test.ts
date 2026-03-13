@@ -1,7 +1,7 @@
 'use strict'
 import { FastifyInstance } from 'fastify'
 import { createHmac } from 'node:crypto'
-import { PostgresClient, runMigrations, type StripeSync } from 'stripe-experiment-sync'
+import { PostgresClient, runMigrations, type StripeSync } from '@stripe/sync-engine'
 import { beforeAll, describe, test, expect, afterAll, vitest } from 'vitest'
 import { getConfig } from '../utils/config'
 import { createServer } from '../app'

@@ -24,7 +24,7 @@
     "dotenv": "^17.2.2",
     "fastify": "^5.6.0",
     "stripe": "^19.0.0",
-    "stripe-experiment-sync": "workspace:*"
+    "@stripe/sync-engine": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.15.2",

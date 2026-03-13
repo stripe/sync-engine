@@ -73,8 +73,8 @@ export class SupabaseSetupClient {
     }
     // Replace unversioned npm imports with versioned ones
     return code.replace(
-      /from ['"]npm:stripe-experiment-sync['"]/g,
-      `from 'npm:stripe-experiment-sync@${version}'`
+      /from ['"]npm:@stripe\/sync-engine['"]/g,
+      `from 'npm:@stripe/sync-engine@${version}'`
     )
   }
 

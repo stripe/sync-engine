@@ -92,7 +92,7 @@ cleanup() {
     # Unpublish beta version if it was created
     if [ -n "$BETA_VERSION" ]; then
         echo "   Unpublishing beta version: $BETA_VERSION"
-        npm unpublish "stripe-experiment-sync@$BETA_VERSION" --force > /dev/null 2>&1 || echo "   Warning: Failed to unpublish beta version"
+        npm unpublish "@stripe/sync-engine@$BETA_VERSION" --force > /dev/null 2>&1 || echo "   Warning: Failed to unpublish beta version"
     fi
 
     # Remove .npmrc if we created it
@@ -216,7 +216,7 @@ RATE_LIMITED=false
 
 while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
     # Query npm registry API directly
-    NPM_API_RESPONSE=$(curl -s "https://registry.npmjs.org/stripe-experiment-sync/$BETA_VERSION" || true)
+    NPM_API_RESPONSE=$(curl -s "https://registry.npmjs.org/@stripe%2Fsync-engine/$BETA_VERSION" || true)
 
     # Check if we got the version back (not a 404)
     if echo "$NPM_API_RESPONSE" | jq -e '.version' > /dev/null 2>&1; then
@@ -260,7 +260,7 @@ if command -v deno >/dev/null 2>&1; then
         # Try to import the package in Deno to verify it's available
         DENO_CHECK=$(deno eval --quiet "
             try {
-                const { StripeSync } = await import('npm:stripe-experiment-sync@${BETA_VERSION}');
+                const { StripeSync } = await import('npm:@stripe/sync-engine@${BETA_VERSION}');
                 console.log('SUCCESS');
                 Deno.exit(0);
             } catch (e) {

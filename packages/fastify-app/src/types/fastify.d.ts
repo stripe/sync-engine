@@ -1,4 +1,4 @@
-import { StripeSync } from 'stripe-experiment-sync'
+import { StripeSync } from '@stripe/sync-engine'
 import type { MerchantConfig } from '../utils/config'
 
 type MerchantRuntime = {

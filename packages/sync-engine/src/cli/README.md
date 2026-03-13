@@ -1,4 +1,4 @@
-# stripe-experiment-sync CLI
+# sync-engine CLI
 
 CLI tool for syncing Stripe data to PostgreSQL with optional real-time event streaming and Supabase Edge Functions deployment.
 
@@ -14,7 +14,7 @@ CLI tool for syncing Stripe data to PostgreSQL with optional real-time event str
 ## Installation
 
 ```bash
-npm install -g stripe-experiment-sync
+npm install -g @stripe/sync-engine
 ```
 
 ## Commands
@@ -22,7 +22,7 @@ npm install -g stripe-experiment-sync
 ### Run Migrations
 
 ```bash
-stripe-experiment-sync migrate [options]
+sync-engine migrate [options]
 
 Options:
   --database-url <url>     Postgres DATABASE_URL (or DATABASE_URL env)
@@ -34,7 +34,7 @@ Runs database migrations to create Stripe schema tables.
 ### Sync Data
 
 ```bash
-stripe-experiment-sync sync [entityName] [options]
+sync-engine sync [entityName] [options]
 
 Arguments:
   entityName               Optional Stripe entity to sync (e.g., customer, invoice, product)
@@ -62,7 +62,7 @@ If a successful sync run completed within the `--interval` window, the backfill 
 ### Monitor
 
 ```bash
-stripe-experiment-sync monitor [options]
+sync-engine monitor [options]
 
 Options:
   --database-url <url>     Postgres DATABASE_URL (or DATABASE_URL env)
@@ -76,7 +76,7 @@ Live display of table row counts in the stripe schema.
 #### Install to Supabase
 
 ```bash
-stripe-experiment-sync supabase install [options]
+sync-engine supabase install [options]
 
 Options:
   --token <token>              Supabase access token (or SUPABASE_ACCESS_TOKEN env)
@@ -95,7 +95,7 @@ Deploys Stripe sync engine as Supabase Edge Functions. The worker interval contr
 #### Uninstall from Supabase
 
 ```bash
-stripe-experiment-sync supabase uninstall [options]
+sync-engine supabase uninstall [options]
 
 Options:
   --token <token>          Supabase access token (or SUPABASE_ACCESS_TOKEN env)
@@ -125,10 +125,10 @@ SUPABASE_PROJECT_REF=your_project_ref
 Then run commands without options:
 
 ```bash
-stripe-experiment-sync migrate
-stripe-experiment-sync sync
-stripe-experiment-sync sync customer
-stripe-experiment-sync supabase install
+sync-engine migrate
+sync-engine sync
+sync-engine sync customer
+sync-engine supabase install
 ```
 
 ## Usage Examples
@@ -137,20 +137,20 @@ stripe-experiment-sync supabase install
 
 ```bash
 # Sync all data and exit
-stripe-experiment-sync sync
+sync-engine sync
 
 # Sync a specific entity
-stripe-experiment-sync sync customer
+sync-engine sync customer
 ```
 
 ### Continuous Sync (Backfill + Live Streaming)
 
 ```bash
 # Backfill then stream via WebSocket (no ngrok needed)
-stripe-experiment-sync sync --listen-mode websocket
+sync-engine sync --listen-mode websocket
 
 # Backfill then stream via ngrok webhook
-stripe-experiment-sync sync --listen-mode webhook
+sync-engine sync --listen-mode webhook
 ```
 
 ### Supabase Deployment Workflow
@@ -158,7 +158,7 @@ stripe-experiment-sync sync --listen-mode webhook
 1. **Deploy to Supabase**:
 
    ```bash
-   stripe-experiment-sync supabase install
+   sync-engine supabase install
    ```
 
 2. **Update webhook endpoint in Stripe dashboard** to point to your Supabase Edge Function
@@ -166,7 +166,7 @@ stripe-experiment-sync sync --listen-mode webhook
 3. **To remove**:
 
    ```bash
-   stripe-experiment-sync supabase uninstall
+   sync-engine supabase uninstall
    ```
 
 ## Testing with Stripe Events

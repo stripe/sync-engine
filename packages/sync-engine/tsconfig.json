@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "npm:stripe-experiment-sync": ["./src/index.ts"]
+      "npm:@stripe/sync-engine": ["./src/index.ts"]
     }
   },
   "include": ["src/**/*", "scripts/**/*"],

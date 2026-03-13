@@ -6,7 +6,7 @@ Deploy Sync Engine to Supabase using managed Edge Functions for webhook ingestio
 
 - A Supabase project
 - A Stripe account and API key
-- `stripe-experiment-sync` CLI installed (or run through `npx`)
+- `@stripe/sync-engine` CLI installed (or run through `npx`)
 - `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF`
 
 ## Deploy
@@ -14,7 +14,7 @@ Deploy Sync Engine to Supabase using managed Edge Functions for webhook ingestio
 Use the CLI to install the Supabase integration:
 
 ```bash
-npx stripe-experiment-sync supabase install \
+npx @stripe/sync-engine supabase install \
   --token $SUPABASE_ACCESS_TOKEN \
   --project $SUPABASE_PROJECT_REF \
   --stripe-key $STRIPE_API_KEY
@@ -36,7 +36,7 @@ After deployment, configure your Stripe webhook endpoint to point to the deploye
 To remove the Supabase deployment:
 
 ```bash
-npx stripe-experiment-sync supabase uninstall \
+npx @stripe/sync-engine supabase uninstall \
   --token $SUPABASE_ACCESS_TOKEN \
   --project $SUPABASE_PROJECT_REF \
   --stripe-key $STRIPE_API_KEY
