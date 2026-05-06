@@ -1783,6 +1783,24 @@
             "additionalProperties": false,
             "description": "AWS RDS IAM authentication config"
           },
+          "pglite": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "data_dir": {
+                    "type": "string",
+                    "description": "Directory for persistent storage (omit for in-memory)"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
           "ssl_ca_pem": {
             "type": "string",
             "description": "PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA)"
