@@ -45,23 +45,38 @@ export async function pgliteClient(
   const dataSource = config.url ?? config.data_dir
   const db = await PGlite.create(dataSource)
 
+  function adaptResult(result: { rows: unknown[]; affectedRows?: number; fields?: { name: string; dataTypeID: number }[] }): pg.QueryResult {
+    return {
+      rows: result.rows as Record<string, unknown>[],
+      rowCount: result.affectedRows ?? null,
+      command: '',
+      oid: 0,
+      fields: result.fields?.map((f) => ({
+        ...f,
+        tableID: 0,
+        columnID: 0,
+        dataTypeSize: 0,
+        dataTypeModifier: 0,
+        format: 'text' as const,
+      })) ?? [],
+    } as pg.QueryResult
+  }
+
   return {
     async query(text: string, values?: unknown[]) {
-      const result = await db.query(text, values)
-      return {
-        rows: result.rows as Record<string, unknown>[],
-        rowCount: result.affectedRows ?? null,
-        command: '',
-        oid: 0,
-        fields: result.fields?.map((f) => ({
-          ...f,
-          tableID: 0,
-          columnID: 0,
-          dataTypeSize: 0,
-          dataTypeModifier: 0,
-          format: 'text' as const,
-        })) ?? [],
-      } as pg.QueryResult
+      if (values && values.length > 0) {
+        return adaptResult(await db.query(text, values))
+      }
+      // PGlite's query() rejects multiple statements; use exec() as fallback
+      try {
+        return adaptResult(await db.query(text))
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('multiple commands')) {
+          await db.exec(text)
+          return adaptResult({ rows: [], affectedRows: 0, fields: [] })
+        }
+        throw err
+      }
     },
     async close() {
       await db.close()
