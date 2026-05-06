@@ -19,6 +19,10 @@ export const configSchema = z
       })
       .optional()
       .describe('AWS RDS IAM authentication config'),
+    allow_experimental_pglite: z
+      .boolean()
+      .optional()
+      .describe('Enable experimental PGlite support (required to use pglite config or file:///memory:// URLs)'),
     pglite: z
       .union([
         z.literal(true),
@@ -43,6 +47,19 @@ export const configSchema = z
     message: 'Specify pglite OR url/connection_string/aws, not both',
     path: ['pglite'],
   })
+  .refine(
+    (config) => {
+      if (config.pglite) return config.allow_experimental_pglite === true
+      const url = config.url ?? config.connection_string
+      if (url && (url.startsWith('file://') || url.startsWith('memory://')))
+        return config.allow_experimental_pglite === true
+      return true
+    },
+    {
+      message: 'Set allow_experimental_pglite: true to use PGlite or file:///memory:// URLs',
+      path: ['allow_experimental_pglite'],
+    }
+  )
 
 export type Config = z.infer<typeof configSchema>
 

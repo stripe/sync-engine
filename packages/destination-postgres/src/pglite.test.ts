@@ -12,7 +12,7 @@ const SCHEMA = 'test_dest'
 let dataDir: string
 
 function makeConfig(): Config {
-  return { pglite: { data_dir: dataDir }, schema: SCHEMA, batch_size: 100 }
+  return { pglite: { data_dir: dataDir }, schema: SCHEMA, batch_size: 100, allow_experimental_pglite: true }
 }
 
 beforeAll(() => {

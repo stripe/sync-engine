@@ -33,11 +33,17 @@ export function pgPoolClient(pool: pg.Pool, logger: Logger = log): ManagedClient
   }
 }
 
+export function isPGliteUrl(url: string): boolean {
+  return url.startsWith('file://') || url.startsWith('memory://')
+}
+
 export async function pgliteClient(
-  config: { data_dir?: string } = {}
+  config: { data_dir?: string; url?: string } = {}
 ): Promise<ManagedClient> {
   const { PGlite } = await import('@electric-sql/pglite')
-  const db = await PGlite.create(config.data_dir)
+
+  const dataSource = config.url ?? config.data_dir
+  const db = await PGlite.create(dataSource)
 
   return {
     async query(text: string, values?: unknown[]) {

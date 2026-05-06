@@ -20,13 +20,13 @@ import {
 import defaultSpec from './spec.js'
 import { log } from './logger.js'
 import type { Config } from './spec.js'
-import { pgPoolClient, pgliteClient } from './client.js'
+import { pgPoolClient, pgliteClient, isPGliteUrl } from './client.js'
 import type { QueryClient, ManagedClient } from './client.js'
 
 // MARK: - Spec
 
 export { configSchema, type Config } from './spec.js'
-export { pgPoolClient, pgliteClient } from './client.js'
+export { pgPoolClient, pgliteClient, isPGliteUrl } from './client.js'
 export type { QueryClient, ManagedClient } from './client.js'
 
 export async function buildPoolConfig(config: Config): Promise<PoolConfig> {
@@ -257,11 +257,13 @@ function describePoolConfig(config: PoolConfig) {
 }
 
 async function createManagedClient(config: Config, operation: string): Promise<ManagedClient> {
-  if (config.pglite) {
-    const dataDir = config.pglite === true ? undefined : config.pglite.data_dir
-    log.debug({ operation, data_dir: dataDir }, 'dest postgres: creating PGlite client')
+  const connectionUrl = config.url ?? config.connection_string
+  if (config.pglite || (connectionUrl && isPGliteUrl(connectionUrl))) {
+    const url = connectionUrl && isPGliteUrl(connectionUrl) ? connectionUrl : undefined
+    const dataDir = config.pglite && config.pglite !== true ? config.pglite.data_dir : undefined
+    log.debug({ operation, url, data_dir: dataDir }, 'dest postgres: creating PGlite client')
     const startedAt = Date.now()
-    const client = await pgliteClient({ data_dir: dataDir })
+    const client = await pgliteClient({ url, data_dir: dataDir })
     log.debug(
       { operation, duration_ms: Date.now() - startedAt },
       'dest postgres: PGlite client ready'

@@ -529,8 +529,8 @@ importers:
         specifier: ^3.1013.0
         version: 3.1013.0
       '@electric-sql/pglite':
-        specifier: ^0.2.17
-        version: 0.2.17
+        specifier: ^0.4.5
+        version: 0.4.5
       '@types/pg':
         specifier: ^8.15.5
         version: 8.15.6
@@ -1004,6 +1004,9 @@ packages:
 
   '@electric-sql/pglite@0.2.17':
     resolution: {integrity: sha512-qEpKRT2oUaWDH6tjRxLHjdzMqRUGYDnGZlKrnL4dJ77JVMcP2Hpo3NYnOSPKdZdeec57B6QPprCUFg0picx5Pw==}
+
+  '@electric-sql/pglite@0.4.5':
+    resolution: {integrity: sha512-aGG2zGEyZzGWKy8P+9ZoNUV0jxt1+hgbeTf+bVAYyxVZZLXg3/9aFlfLxb08AYZVAfAkQlQIysmWjhc5hwDG8g==}
 
   '@emnapi/runtime@1.9.1':
     resolution: {integrity: sha512-VYi5+ZVLhpgK4hQ0TAjiQiZ6ol0oe4mBx7mVv7IflsiEp0OWoVsp/+f9Vc1hOhE0TtkORVrI1GvzyreqpgWtkA==}
@@ -5558,6 +5561,8 @@ snapshots:
       w3c-keyname: 2.2.8
 
   '@electric-sql/pglite@0.2.17': {}
+
+  '@electric-sql/pglite@0.4.5': {}
 
   '@emnapi/runtime@1.9.1':
     dependencies:
