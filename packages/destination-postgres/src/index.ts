@@ -20,10 +20,14 @@ import {
 import defaultSpec from './spec.js'
 import { log } from './logger.js'
 import type { Config } from './spec.js'
+import { pgPoolClient, pgliteClient } from './client.js'
+import type { QueryClient, ManagedClient } from './client.js'
 
 // MARK: - Spec
 
 export { configSchema, type Config } from './spec.js'
+export { pgPoolClient, pgliteClient } from './client.js'
+export type { QueryClient, ManagedClient } from './client.js'
 
 export async function buildPoolConfig(config: Config): Promise<PoolConfig> {
   if (config.aws) {
@@ -80,7 +84,7 @@ export interface WriteManyResult extends UpsertManyResult, DeleteManyResult {}
  * cleaned up — no production user is on the soft-delete code path.
  */
 export async function writeMany(
-  pool: pg.Pool,
+  client: QueryClient,
   schema: string,
   table: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,8 +95,8 @@ export async function writeMany(
   const tombstones = entries.filter((e) => e.recordDeleted === true).map((r) => r.data)
   const liveRecords = entries.filter((e) => e.recordDeleted !== true).map((r) => r.data)
 
-  const u = await upsertMany(pool, schema, table, liveRecords, primaryKeyColumns, newerThanField)
-  const d = await deleteMany(pool, schema, table, tombstones, primaryKeyColumns)
+  const u = await upsertMany(client, schema, table, liveRecords, primaryKeyColumns, newerThanField)
+  const d = await deleteMany(client, schema, table, tombstones, primaryKeyColumns)
 
   return { ...u, deleted_count: d.deleted_count }
 }
@@ -102,7 +106,7 @@ export async function writeMany(
  * `_synced_at` is the destination write time.
  */
 export async function upsertMany(
-  pool: pg.Pool,
+  client: QueryClient,
   schema: string,
   table: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,7 +132,7 @@ export async function upsertMany(
     return { _raw_data: e, _synced_at: syncedAt, _updated_at: new Date(ts * 1000).toISOString() }
   })
 
-  return await upsertWithStats(pool, records, {
+  return await upsertWithStats(client, records, {
     schema,
     table,
     primaryKeyColumns,
@@ -141,7 +145,7 @@ export async function upsertMany(
  * terminal — once an object is deleted it cannot be undeleted.
  */
 export async function deleteMany(
-  pool: pg.Pool,
+  client: QueryClient,
   schema: string,
   table: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -165,7 +169,7 @@ export async function deleteMany(
 USING (VALUES ${valueRows.join(', ')}) AS d(${identList(primaryKeyColumns)})
 WHERE ${pkJoin}`
 
-  const result = await pool.query(stmt, params)
+  const result = await client.query(stmt, params)
   return { deleted_count: result.rowCount ?? 0 }
 }
 
@@ -187,7 +191,7 @@ export {
 
 /** Throw if any stream's catalog enum allow-list disagrees with an existing CHECK constraint. */
 async function assertEnumConstraintsConsistent(
-  pool: pg.Pool,
+  client: QueryClient,
   schema: string,
   streams: ReadonlyArray<{ stream: { name: string; json_schema?: Record<string, unknown> } }>
 ): Promise<void> {
@@ -203,7 +207,7 @@ async function assertEnumConstraintsConsistent(
   if (enumColumns.size === 0) return
 
   const existing = await getExistingEnumAllowLists(
-    pool,
+    client,
     schema,
     streams.map((s) => s.stream.name),
     [...enumColumns]
@@ -236,23 +240,6 @@ function errorMessage(err: unknown): string {
   return (err as NodeJS.ErrnoException).code ?? err.constructor.name
 }
 
-function createPool(config: PoolConfig): pg.Pool {
-  const pool = new pg.Pool(config)
-  // Destination connectors should surface pool failures without crashing the host process.
-  pool.on('error', (err) => {
-    log.error({ err }, 'Postgres destination pool error')
-  })
-  return pool
-}
-
-function poolStats(pool: pg.Pool) {
-  return {
-    total_count: pool.totalCount,
-    idle_count: pool.idleCount,
-    waiting_count: pool.waitingCount,
-  }
-}
-
 function describePoolConfig(config: PoolConfig) {
   return {
     host: config.host,
@@ -269,7 +256,19 @@ function describePoolConfig(config: PoolConfig) {
   }
 }
 
-async function createInstrumentedPool(config: Config, operation: string): Promise<pg.Pool> {
+async function createManagedClient(config: Config, operation: string): Promise<ManagedClient> {
+  if (config.pglite) {
+    const dataDir = config.pglite === true ? undefined : config.pglite.data_dir
+    log.debug({ operation, data_dir: dataDir }, 'dest postgres: creating PGlite client')
+    const startedAt = Date.now()
+    const client = await pgliteClient({ data_dir: dataDir })
+    log.debug(
+      { operation, duration_ms: Date.now() - startedAt },
+      'dest postgres: PGlite client ready'
+    )
+    return client
+  }
+
   const configStartedAt = Date.now()
   log.debug({ operation }, 'dest postgres: building pool config')
   const poolConfig = await buildPoolConfig(config)
@@ -282,35 +281,27 @@ async function createInstrumentedPool(config: Config, operation: string): Promis
     'dest postgres: built pool config'
   )
 
-  const pool = withQueryLogging(createPool(poolConfig), log)
-  log.debug({ operation, ...poolStats(pool) }, 'dest postgres: pool created')
-  return pool
+  const pool = withQueryLogging(new pg.Pool(poolConfig), log)
+  const client = pgPoolClient(pool, log)
+  log.debug({ operation, ...client.stats?.() }, 'dest postgres: pool created')
+  return client
 }
 
-async function connectAndRelease(pool: pg.Pool, operation: string): Promise<void> {
+async function verifyConnectivity(client: ManagedClient, operation: string): Promise<void> {
   const startedAt = Date.now()
-  log.debug({ operation, ...poolStats(pool) }, 'dest postgres: pool.connect start')
-  const client = await pool.connect()
-  try {
-    log.debug(
-      {
-        operation,
-        duration_ms: Date.now() - startedAt,
-        ...poolStats(pool),
-      },
-      'dest postgres: pool.connect complete'
-    )
-  } finally {
-    client.release()
-    log.debug({ operation, ...poolStats(pool) }, 'dest postgres: pool.connect released')
-  }
+  log.debug({ operation, ...client.stats?.() }, 'dest postgres: connectivity check start')
+  await client.query('SELECT 1')
+  log.debug(
+    { operation, duration_ms: Date.now() - startedAt, ...client.stats?.() },
+    'dest postgres: connectivity check complete'
+  )
 }
 
-async function endPool(pool: pg.Pool, operation: string): Promise<void> {
+async function closeClient(client: ManagedClient, operation: string): Promise<void> {
   const startedAt = Date.now()
-  log.debug({ operation, ...poolStats(pool) }, 'dest postgres: pool.end start')
-  await pool.end()
-  log.debug({ operation, duration_ms: Date.now() - startedAt }, 'dest postgres: pool.end complete')
+  log.debug({ operation, ...client.stats?.() }, 'dest postgres: closing client')
+  await client.close()
+  log.debug({ operation, duration_ms: Date.now() - startedAt }, 'dest postgres: client closed')
 }
 
 const destination = {
@@ -319,10 +310,9 @@ const destination = {
   },
 
   async *check({ config }) {
-    const pool = await createInstrumentedPool(config, 'check')
+    const client = await createManagedClient(config, 'check')
     try {
-      await connectAndRelease(pool, 'check')
-      await pool.query('SELECT 1')
+      await verifyConnectivity(client, 'check')
       yield {
         type: 'connection_status' as const,
         connection_status: { status: 'succeeded' as const },
@@ -336,40 +326,35 @@ const destination = {
         },
       }
     } finally {
-      await endPool(pool, 'check')
+      await closeClient(client, 'check')
     }
   },
 
   async *setup({ config, catalog }) {
-    log.debug({ schema: config.schema }, 'dest setup: connecting to pool')
-    const pool = await createInstrumentedPool(config, 'setup')
+    log.debug({ schema: config.schema }, 'dest setup: creating client')
+    const client = await createManagedClient(config, 'setup')
     try {
-      await connectAndRelease(pool, 'setup')
+      await verifyConnectivity(client, 'setup')
       log.info(`Creating schema "${config.schema}" (${catalog.streams.length} streams)`)
       log.debug('dest setup: creating schema')
-      await pool.query(sql`CREATE SCHEMA IF NOT EXISTS "${config.schema}"`)
-      // Backward-compat: drop legacy `set_updated_at()` (CASCADE removes any orphan `handle_updated_at` triggers from older deployments).
+      await client.query(sql`CREATE SCHEMA IF NOT EXISTS "${config.schema}"`)
       log.debug('dest setup: dropping legacy set_updated_at() function')
-      await pool.query(sql`DROP FUNCTION IF EXISTS "${config.schema}".set_updated_at() CASCADE`)
+      await client.query(sql`DROP FUNCTION IF EXISTS "${config.schema}".set_updated_at() CASCADE`)
 
-      // The DO $check$ block uses ADD CONSTRAINT + EXCEPTION WHEN duplicate_object,
-      // which silently no-ops on a changed enum list — surface it loudly instead.
-      await assertEnumConstraintsConsistent(pool, config.schema, catalog.streams)
+      await assertEnumConstraintsConsistent(client, config.schema, catalog.streams)
 
       log.debug({ streamCount: catalog.streams.length }, 'dest setup: creating tables')
-      await Promise.all(
-        catalog.streams.map(async (cs) => {
-          await pool.query(
-            buildCreateTableDDL(config.schema, cs.stream.name, cs.stream.json_schema ?? {}, {
-              system_columns: cs.system_columns,
-              primary_key: cs.stream.primary_key,
-            })
-          )
-        })
-      )
+      for (const cs of catalog.streams) {
+        await client.query(
+          buildCreateTableDDL(config.schema, cs.stream.name, cs.stream.json_schema ?? {}, {
+            system_columns: cs.system_columns,
+            primary_key: cs.stream.primary_key,
+          })
+        )
+      }
       log.debug('dest setup: complete')
     } finally {
-      await endPool(pool, 'setup')
+      await closeClient(client, 'setup')
     }
   },
 
@@ -380,17 +365,17 @@ const destination = {
         `Refusing to drop protected schema "${config.schema}" — teardown only drops user-created schemas`
       )
     }
-    const pool = await createInstrumentedPool(config, 'teardown')
+    const client = await createManagedClient(config, 'teardown')
     try {
-      await connectAndRelease(pool, 'teardown')
-      await pool.query(sql`DROP SCHEMA IF EXISTS "${config.schema}" CASCADE`)
+      await verifyConnectivity(client, 'teardown')
+      await client.query(sql`DROP SCHEMA IF EXISTS "${config.schema}" CASCADE`)
     } finally {
-      await endPool(pool, 'teardown')
+      await closeClient(client, 'teardown')
     }
   },
 
   async *write({ config, catalog }, $stdin) {
-    const pool = await createInstrumentedPool(config, 'write')
+    const client = await createManagedClient(config, 'write')
     const batchSize = config.batch_size
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const streamBuffers = new Map<string, Record<string, any>[]>()
@@ -406,7 +391,6 @@ const destination = {
 
     const failedStreams = new Set<string>()
 
-    /** Flush and return error message if failed, undefined if ok. */
     const flushStream = async (streamName: string): Promise<string | undefined> => {
       if (failedStreams.has(streamName)) return undefined
       const buffer = streamBuffers.get(streamName)
@@ -421,12 +405,12 @@ const destination = {
           schema: config.schema,
           primary_key: pk,
           newer_than_field: newerThan,
-          ...poolStats(pool),
+          ...client.stats?.(),
         },
         'dest write: flush start'
       )
       try {
-        const stats = await writeMany(pool, config.schema, streamName, buffer, pk, newerThan)
+        const stats = await writeMany(client, config.schema, streamName, buffer, pk, newerThan)
         log.debug(
           {
             stream: streamName,
@@ -438,7 +422,7 @@ const destination = {
             deleted: stats.deleted_count,
             skipped: stats.skipped_count,
             duration_ms: Date.now() - startedAt,
-            ...poolStats(pool),
+            ...client.stats?.(),
           },
           `dest write: upsert ${config.schema}.${streamName}`
         )
@@ -455,7 +439,7 @@ const destination = {
             duration_ms: Date.now() - startedAt,
             error: errMsg,
             err,
-            ...poolStats(pool),
+            ...client.stats?.(),
           },
           'dest write: flush failed'
         )
@@ -475,7 +459,7 @@ const destination = {
     }
 
     try {
-      await connectAndRelease(pool, 'write')
+      await verifyConnectivity(client, 'write')
       for await (const msg of $stdin) {
         if (msg.type === 'record') {
           const { stream } = msg.record
@@ -548,7 +532,7 @@ const destination = {
         log.debug(`Postgres destination: wrote to schema "${config.schema}"`)
       }
     } finally {
-      await endPool(pool, 'write')
+      await closeClient(client, 'write')
     }
   },
 } satisfies Destination<Config>

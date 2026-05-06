@@ -528,6 +528,9 @@ importers:
       '@aws-sdk/rds-signer':
         specifier: ^3.1013.0
         version: 3.1013.0
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
       '@types/pg':
         specifier: ^8.15.5
         version: 8.15.6

@@ -30,7 +30,8 @@
   },
   "peerDependencies": {
     "@aws-sdk/client-sts": "^3",
-    "@aws-sdk/rds-signer": "^3"
+    "@aws-sdk/rds-signer": "^3",
+    "@electric-sql/pglite": "^0.2"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sts": {
@@ -38,11 +39,15 @@
     },
     "@aws-sdk/rds-signer": {
       "optional": true
+    },
+    "@electric-sql/pglite": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@aws-sdk/client-sts": "^3.1013.0",
     "@aws-sdk/rds-signer": "^3.1013.0",
+    "@electric-sql/pglite": "^0.2.17",
     "@types/pg": "^8.15.5",
     "vitest": "^3.2.4"
   }
