@@ -1572,6 +1572,10 @@
             "additionalProperties": false,
             "description": "AWS RDS IAM authentication config"
           },
+          "allow_experimental_pglite": {
+            "type": "boolean",
+            "description": "Enable experimental PGlite support (required to use pglite config or file:///memory:// URLs)"
+          },
           "pglite": {
             "anyOf": [
               {
