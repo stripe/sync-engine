@@ -467,6 +467,12 @@ export interface components {
                 /** @description External ID for STS AssumeRole */
                 external_id?: string;
             };
+            /** @description Enable experimental PGlite support (required to use pglite config or file:///memory:// URLs) */
+            allow_experimental_pglite?: boolean;
+            pglite?: true | {
+                /** @description Directory for persistent storage (omit for in-memory) */
+                data_dir?: string;
+            };
             /** @description PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA) */
             ssl_ca_pem?: string;
         };

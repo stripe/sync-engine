@@ -8,6 +8,11 @@
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./pglite": {
+      "bun": "./src/pglite-entry.ts",
+      "types": "./dist/pglite-entry.d.ts",
+      "import": "./dist/pglite-entry.js"
     }
   },
   "bin": {
@@ -30,7 +35,8 @@
   },
   "peerDependencies": {
     "@aws-sdk/client-sts": "^3",
-    "@aws-sdk/rds-signer": "^3"
+    "@aws-sdk/rds-signer": "^3",
+    "@electric-sql/pglite": "^0.4.5"
   },
   "peerDependenciesMeta": {
     "@aws-sdk/client-sts": {
@@ -38,11 +44,15 @@
     },
     "@aws-sdk/rds-signer": {
       "optional": true
+    },
+    "@electric-sql/pglite": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@aws-sdk/client-sts": "^3.1013.0",
     "@aws-sdk/rds-signer": "^3.1013.0",
+    "@electric-sql/pglite": "^0.4.5",
     "@types/pg": "^8.15.5",
     "vitest": "^3.2.4"
   }

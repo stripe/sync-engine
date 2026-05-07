@@ -1572,6 +1572,28 @@
             "additionalProperties": false,
             "description": "AWS RDS IAM authentication config"
           },
+          "allow_experimental_pglite": {
+            "type": "boolean",
+            "description": "Enable experimental PGlite support (required to use pglite config or file:///memory:// URLs)"
+          },
+          "pglite": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "data_dir": {
+                    "type": "string",
+                    "description": "Directory for persistent storage (omit for in-memory)"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
           "ssl_ca_pem": {
             "type": "string",
             "description": "PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA)"

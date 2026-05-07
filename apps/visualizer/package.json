@@ -12,7 +12,7 @@
     "@codemirror/lang-sql": "^6.7.0",
     "@codemirror/state": "^6.4.0",
     "@codemirror/view": "^6.26.0",
-    "@electric-sql/pglite": "^0.2.0",
+    "@electric-sql/pglite": "^0.4.5",
     "@stripe/sync-source-stripe": "workspace:*",
     "codemirror": "^6.0.1",
     "next": "^15",
