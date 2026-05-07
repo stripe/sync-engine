@@ -21,10 +21,10 @@
     "dist"
   ],
   "dependencies": {
-    "@hono/node-server": "^1.19.11",
+    "@hono/node-server": "^1.19.13",
     "@stripe/sync-destination-postgres": "workspace:*",
     "@stripe/sync-openapi": "workspace:*",
-    "hono": "^4.12.8",
+    "hono": "^4.12.16",
     "pg": "^8.16.3"
   },
   "devDependencies": {
