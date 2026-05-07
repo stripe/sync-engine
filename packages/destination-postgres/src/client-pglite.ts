@@ -13,6 +13,20 @@ export async function pgliteClient(
   const dataSource = config.url ?? config.data_dir
   const db = await PGlite.create(dataSource)
 
+  let closed = false
+  const shutdown = () => {
+    if (closed) return
+    closed = true
+    db.close().catch(() => {})
+    cleanup()
+  }
+  const cleanup = () => {
+    process.removeListener('SIGTERM', shutdown)
+    process.removeListener('SIGINT', shutdown)
+  }
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
+
   function adaptResult(result: { rows: unknown[]; affectedRows?: number; fields?: { name: string; dataTypeID: number }[] }): pg.QueryResult {
     return {
       rows: result.rows as Record<string, unknown>[],
@@ -47,6 +61,9 @@ export async function pgliteClient(
       }
     },
     async close() {
+      if (closed) return
+      closed = true
+      cleanup()
       await db.close()
     },
   }
