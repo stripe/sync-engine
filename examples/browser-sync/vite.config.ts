@@ -1,20 +1,30 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import path from 'path'
 
+const shim = (name: string) => path.resolve(__dirname, `src/shims/${name}.ts`)
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    nodePolyfills({
+      include: ['buffer', 'crypto', 'stream', 'path', 'os', 'events', 'util', 'process'],
+    }),
+  ],
   resolve: {
     alias: {
-      '@stripe/sync-logger/progress': path.resolve(__dirname, 'src/shims/logger-progress.ts'),
-      '@stripe/sync-logger': path.resolve(__dirname, 'src/shims/logger.ts'),
-      'pg': path.resolve(__dirname, 'src/shims/pg.ts'),
-      'ws': path.resolve(__dirname, 'src/shims/ws.ts'),
-      'https-proxy-agent': path.resolve(__dirname, 'src/shims/noop.ts'),
+      '@stripe/sync-logger/progress': shim('logger-progress'),
+      '@stripe/sync-logger': shim('logger'),
+      'pg': shim('pg'),
+      'ws': shim('ws'),
+      'https-proxy-agent': shim('noop'),
+      'node:child_process': shim('child_process'),
+      'node:net': shim('noop'),
+      'node:http': shim('noop'),
     },
   },
   define: {
-    'process.env': '{}',
     'process.platform': '"browser"',
   },
   build: {
