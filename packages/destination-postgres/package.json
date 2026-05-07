@@ -8,6 +8,11 @@
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./pglite": {
+      "bun": "./src/pglite-entry.ts",
+      "types": "./dist/pglite-entry.d.ts",
+      "import": "./dist/pglite-entry.js"
     }
   },
   "bin": {

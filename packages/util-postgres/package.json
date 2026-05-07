@@ -8,6 +8,16 @@
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./sql": {
+      "bun": "./src/sql.ts",
+      "types": "./dist/sql.d.ts",
+      "import": "./dist/sql.js"
+    },
+    "./upsert": {
+      "bun": "./src/upsert.ts",
+      "types": "./dist/upsert.d.ts",
+      "import": "./dist/upsert.js"
     }
   },
   "scripts": {

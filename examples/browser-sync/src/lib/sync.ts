@@ -1,6 +1,6 @@
-import { createEngine, createConnectorResolver } from '@stripe/sync-engine'
+import { createEngine, createConnectorResolver } from '@stripe/sync-engine/lib'
 import sourceStripe from '@stripe/sync-source-stripe'
-import destinationPostgres from '@stripe/sync-destination-postgres'
+import destinationPostgres from '@stripe/sync-destination-postgres/pglite'
 
 export interface SyncOptions {
   apiKey: string

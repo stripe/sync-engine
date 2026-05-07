@@ -14,6 +14,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./lib": {
+      "bun": "./src/lib/index.ts",
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.js"
+    },
     "./cli": {
       "bun": "./src/cli/command.ts",
       "types": "./dist/cli/command.d.ts",
