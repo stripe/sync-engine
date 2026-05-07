@@ -293,6 +293,10 @@ export interface components {
             stripe: components["schemas"]["SourceStripeConfig"];
         } | {
             /** @constant */
+            type: "postgres";
+            postgres: components["schemas"]["SourcePostgresConfig"];
+        } | {
+            /** @constant */
             type: "metronome";
             metronome: components["schemas"]["SourceMetronomeConfig"];
         };
@@ -332,6 +336,133 @@ export interface components {
             /** @description Override max requests per second (default: auto-derived from API key mode — 20 live, 10 test). */
             rate_limit?: number;
         };
+        SourcePostgresConfig: {
+            [key: string]: unknown;
+        } & ({
+            /**
+             * @description Schema containing the source table
+             * @default public
+             */
+            schema: string;
+            /**
+             * @description Columns that uniquely identify a row in this stream
+             * @default [
+             *       "id"
+             *     ]
+             */
+            primary_key: string[];
+            /** @description Monotonic column used for incremental reads */
+            cursor_field: string;
+            /**
+             * @description Rows to read per page
+             * @default 100
+             */
+            page_size: number;
+            /** @description PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA) */
+            ssl_ca_pem?: string;
+            /** @description Postgres connection string */
+            url: string;
+            /** @description Deprecated alias for url; prefer url */
+            connection_string?: string;
+            /** @description Table to read from */
+            table: string;
+            query?: unknown;
+            /** @description Stream name emitted in the catalog and records. Defaults to table name. */
+            stream?: string;
+        } | {
+            /**
+             * @description Schema containing the source table
+             * @default public
+             */
+            schema: string;
+            /**
+             * @description Columns that uniquely identify a row in this stream
+             * @default [
+             *       "id"
+             *     ]
+             */
+            primary_key: string[];
+            /** @description Monotonic column used for incremental reads */
+            cursor_field: string;
+            /**
+             * @description Rows to read per page
+             * @default 100
+             */
+            page_size: number;
+            /** @description PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA) */
+            ssl_ca_pem?: string;
+            /** @description Postgres connection string */
+            url?: string;
+            /** @description Deprecated alias for url; prefer url */
+            connection_string: string;
+            /** @description Table to read from */
+            table: string;
+            query?: unknown;
+            /** @description Stream name emitted in the catalog and records. Defaults to table name. */
+            stream?: string;
+        } | {
+            /**
+             * @description Schema containing the source table
+             * @default public
+             */
+            schema: string;
+            /**
+             * @description Columns that uniquely identify a row in this stream
+             * @default [
+             *       "id"
+             *     ]
+             */
+            primary_key: string[];
+            /** @description Monotonic column used for incremental reads */
+            cursor_field: string;
+            /**
+             * @description Rows to read per page
+             * @default 100
+             */
+            page_size: number;
+            /** @description PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA) */
+            ssl_ca_pem?: string;
+            /** @description Postgres connection string */
+            url: string;
+            /** @description Deprecated alias for url; prefer url */
+            connection_string?: string;
+            table?: unknown;
+            /** @description SQL query to read from. Must expose the primary_key and cursor_field columns. */
+            query: string;
+            /** @description Stream name emitted in the catalog and records. */
+            stream: string;
+        } | {
+            /**
+             * @description Schema containing the source table
+             * @default public
+             */
+            schema: string;
+            /**
+             * @description Columns that uniquely identify a row in this stream
+             * @default [
+             *       "id"
+             *     ]
+             */
+            primary_key: string[];
+            /** @description Monotonic column used for incremental reads */
+            cursor_field: string;
+            /**
+             * @description Rows to read per page
+             * @default 100
+             */
+            page_size: number;
+            /** @description PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA) */
+            ssl_ca_pem?: string;
+            /** @description Postgres connection string */
+            url?: string;
+            /** @description Deprecated alias for url; prefer url */
+            connection_string: string;
+            table?: unknown;
+            /** @description SQL query to read from. Must expose the primary_key and cursor_field columns. */
+            query: string;
+            /** @description Stream name emitted in the catalog and records. */
+            stream: string;
+        });
         SourceMetronomeConfig: {
             /** @description Metronome API bearer token */
             api_key: string;
@@ -357,6 +488,10 @@ export interface components {
             /** @constant */
             type: "google_sheets";
             google_sheets: components["schemas"]["DestinationGoogleSheetsConfig"];
+        } | {
+            /** @constant */
+            type: "stripe";
+            stripe: components["schemas"]["DestinationStripeConfig"];
         } | {
             /** @constant */
             type: "redis";
@@ -421,6 +556,67 @@ export interface components {
              */
             batch_size: number;
         };
+        DestinationStripeConfig: {
+            [key: string]: unknown;
+        } & ({
+            /** @description Stripe API key (sk_test_... or sk_live_...) */
+            api_key: string;
+            /**
+             * Format: uri
+             * @description Override the Stripe API base URL (e.g. http://localhost:12111 for tests)
+             */
+            base_url?: string;
+            /**
+             * @description Retries for 429/5xx/network errors
+             * @default 3
+             */
+            max_retries: number;
+            /** @constant */
+            api_version: "unsafe-development";
+            /** @constant */
+            object: "custom_object";
+            /** @constant */
+            write_mode: "create";
+            /** @description Per-source-stream Custom Object write configuration. */
+            streams: {
+                [key: string]: {
+                    /** @description Stripe Custom Object api_name_plural */
+                    plural_name: string;
+                    /** @description Mapping from Custom Object field names to source record fields. */
+                    field_mapping: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        } | {
+            /** @description Stripe API key (sk_test_... or sk_live_...) */
+            api_key: string;
+            /**
+             * Format: uri
+             * @description Override the Stripe API base URL (e.g. http://localhost:12111 for tests)
+             */
+            base_url?: string;
+            /**
+             * @description Retries for 429/5xx/network errors
+             * @default 3
+             */
+            max_retries: number;
+            /** @enum {string} */
+            api_version: "2026-03-25.dahlia" | "2026-02-25.clover" | "2026-01-28.clover" | "2025-12-15.clover" | "2025-11-17.clover" | "2025-10-29.clover" | "2025-09-30.clover" | "2025-08-27.basil" | "2025-07-30.basil" | "2025-06-30.basil" | "2025-05-28.basil" | "2025-04-30.basil" | "2025-03-31.basil" | "2025-02-24.acacia" | "2025-01-27.acacia" | "2024-12-18.acacia" | "2024-11-20.acacia" | "2024-10-28.acacia" | "2024-09-30.acacia" | "2024-06-20" | "2024-04-10" | "2024-04-03" | "2023-10-16" | "2023-08-16" | "2022-11-15" | "2022-08-01" | "2020-08-27" | "2020-03-02" | "2019-12-03" | "2019-11-05" | "2019-10-17" | "2019-10-08" | "2019-09-09" | "2019-08-14" | "2019-05-16" | "2019-03-14" | "2019-02-19" | "2019-02-11" | "2018-11-08" | "2018-10-31" | "2018-09-24" | "2018-09-06" | "2018-08-23" | "2018-07-27" | "2018-05-21" | "2018-02-28" | "2018-02-06" | "2018-02-05" | "2018-01-23" | "2017-12-14" | "2017-08-15";
+            /** @constant */
+            object: "standard_object";
+            /** @constant */
+            write_mode: "create";
+            /** @description Per-source-stream standard Stripe object create configuration. */
+            streams: {
+                [key: string]: {
+                    /** @description Mapping from Stripe create parameter names to source record fields. */
+                    field_mapping: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        });
         DestinationRedisConfig: {
             /** @description Redis connection URL (redis://host:port) */
             url?: string;
@@ -463,6 +659,7 @@ export interface components {
                 data: {
                     [key: string]: unknown;
                 };
+                recordDeleted?: boolean;
                 /**
                  * Format: date-time
                  * @description ISO 8601 timestamp when the record was emitted by the source.
@@ -695,11 +892,11 @@ export interface components {
             control: {
                 /** @constant */
                 control_type: "source_config";
-                source_config: components["schemas"]["SourceStripeConfig"] | components["schemas"]["SourceMetronomeConfig"];
+                source_config: components["schemas"]["SourceStripeConfig"] | components["schemas"]["SourcePostgresConfig"] | components["schemas"]["SourceMetronomeConfig"];
             } | {
                 /** @constant */
                 control_type: "destination_config";
-                destination_config: components["schemas"]["DestinationPostgresConfig"] | components["schemas"]["DestinationGoogleSheetsConfig"] | components["schemas"]["DestinationRedisConfig"];
+                destination_config: components["schemas"]["DestinationPostgresConfig"] | components["schemas"]["DestinationGoogleSheetsConfig"] | components["schemas"]["DestinationStripeConfig"] | components["schemas"]["DestinationRedisConfig"];
             };
         };
         ProgressMessage: {
@@ -800,7 +997,7 @@ export interface components {
             type: "eof";
             eof: components["schemas"]["EofPayload"];
         };
-        /** @description Terminal message signaling end of this request. */
+        /** @description Deprecated terminal message signaling end of this request. Prefer explicit request/response results via pipeline_sync_batch. */
         EofPayload: {
             /** @description Terminal run status derived from stream outcomes. */
             status: components["schemas"]["RunStatus"];

@@ -975,6 +975,22 @@
             "properties": {
               "type": {
                 "type": "string",
+                "const": "postgres"
+              },
+              "postgres": {
+                "$ref": "#/components/schemas/SourcePostgresConfig"
+              }
+            },
+            "required": [
+              "type",
+              "postgres"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
                 "const": "metronome"
               },
               "metronome": {
@@ -1122,6 +1138,265 @@
         ],
         "additionalProperties": false
       },
+      "SourcePostgresConfig": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {}
+          },
+          {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "schema": {
+                    "default": "public",
+                    "type": "string",
+                    "description": "Schema containing the source table"
+                  },
+                  "primary_key": {
+                    "default": [
+                      "id"
+                    ],
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Columns that uniquely identify a row in this stream"
+                  },
+                  "cursor_field": {
+                    "type": "string",
+                    "description": "Monotonic column used for incremental reads"
+                  },
+                  "page_size": {
+                    "default": 100,
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Rows to read per page"
+                  },
+                  "ssl_ca_pem": {
+                    "type": "string",
+                    "description": "PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA)"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Postgres connection string"
+                  },
+                  "connection_string": {
+                    "type": "string",
+                    "description": "Deprecated alias for url; prefer url"
+                  },
+                  "table": {
+                    "type": "string",
+                    "description": "Table to read from"
+                  },
+                  "query": {
+                    "not": {}
+                  },
+                  "stream": {
+                    "type": "string",
+                    "description": "Stream name emitted in the catalog and records. Defaults to table name."
+                  }
+                },
+                "required": [
+                  "cursor_field",
+                  "url",
+                  "table"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "schema": {
+                    "default": "public",
+                    "type": "string",
+                    "description": "Schema containing the source table"
+                  },
+                  "primary_key": {
+                    "default": [
+                      "id"
+                    ],
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Columns that uniquely identify a row in this stream"
+                  },
+                  "cursor_field": {
+                    "type": "string",
+                    "description": "Monotonic column used for incremental reads"
+                  },
+                  "page_size": {
+                    "default": 100,
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Rows to read per page"
+                  },
+                  "ssl_ca_pem": {
+                    "type": "string",
+                    "description": "PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA)"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Postgres connection string"
+                  },
+                  "connection_string": {
+                    "type": "string",
+                    "description": "Deprecated alias for url; prefer url"
+                  },
+                  "table": {
+                    "type": "string",
+                    "description": "Table to read from"
+                  },
+                  "query": {
+                    "not": {}
+                  },
+                  "stream": {
+                    "type": "string",
+                    "description": "Stream name emitted in the catalog and records. Defaults to table name."
+                  }
+                },
+                "required": [
+                  "cursor_field",
+                  "connection_string",
+                  "table"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "schema": {
+                    "default": "public",
+                    "type": "string",
+                    "description": "Schema containing the source table"
+                  },
+                  "primary_key": {
+                    "default": [
+                      "id"
+                    ],
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Columns that uniquely identify a row in this stream"
+                  },
+                  "cursor_field": {
+                    "type": "string",
+                    "description": "Monotonic column used for incremental reads"
+                  },
+                  "page_size": {
+                    "default": 100,
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Rows to read per page"
+                  },
+                  "ssl_ca_pem": {
+                    "type": "string",
+                    "description": "PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA)"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Postgres connection string"
+                  },
+                  "connection_string": {
+                    "type": "string",
+                    "description": "Deprecated alias for url; prefer url"
+                  },
+                  "table": {
+                    "not": {}
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "SQL query to read from. Must expose the primary_key and cursor_field columns."
+                  },
+                  "stream": {
+                    "type": "string",
+                    "description": "Stream name emitted in the catalog and records."
+                  }
+                },
+                "required": [
+                  "cursor_field",
+                  "url",
+                  "query",
+                  "stream"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "schema": {
+                    "default": "public",
+                    "type": "string",
+                    "description": "Schema containing the source table"
+                  },
+                  "primary_key": {
+                    "default": [
+                      "id"
+                    ],
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Columns that uniquely identify a row in this stream"
+                  },
+                  "cursor_field": {
+                    "type": "string",
+                    "description": "Monotonic column used for incremental reads"
+                  },
+                  "page_size": {
+                    "default": 100,
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Rows to read per page"
+                  },
+                  "ssl_ca_pem": {
+                    "type": "string",
+                    "description": "PEM-encoded CA certificate for SSL verification (required for verify-ca / verify-full with a private CA)"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Postgres connection string"
+                  },
+                  "connection_string": {
+                    "type": "string",
+                    "description": "Deprecated alias for url; prefer url"
+                  },
+                  "table": {
+                    "not": {}
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "SQL query to read from. Must expose the primary_key and cursor_field columns."
+                  },
+                  "stream": {
+                    "type": "string",
+                    "description": "Stream name emitted in the catalog and records."
+                  }
+                },
+                "required": [
+                  "cursor_field",
+                  "connection_string",
+                  "query",
+                  "stream"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        ]
+      },
       "SourceMetronomeConfig": {
         "type": "object",
         "properties": {
@@ -1194,6 +1469,22 @@
             "required": [
               "type",
               "google_sheets"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "stripe"
+              },
+              "stripe": {
+                "$ref": "#/components/schemas/DestinationStripeConfig"
+              }
+            },
+            "required": [
+              "type",
+              "stripe"
             ]
           },
           {
@@ -1333,6 +1624,210 @@
         ],
         "additionalProperties": false
       },
+      "DestinationStripeConfig": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {}
+          },
+          {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Stripe API key (sk_test_... or sk_live_...)"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Override the Stripe API base URL (e.g. http://localhost:12111 for tests)"
+                  },
+                  "max_retries": {
+                    "default": 3,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Retries for 429/5xx/network errors"
+                  },
+                  "api_version": {
+                    "type": "string",
+                    "const": "unsafe-development"
+                  },
+                  "object": {
+                    "type": "string",
+                    "const": "custom_object"
+                  },
+                  "write_mode": {
+                    "type": "string",
+                    "const": "create"
+                  },
+                  "streams": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "plural_name": {
+                          "type": "string",
+                          "description": "Stripe Custom Object api_name_plural"
+                        },
+                        "field_mapping": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Mapping from Custom Object field names to source record fields."
+                        }
+                      },
+                      "required": [
+                        "plural_name",
+                        "field_mapping"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "Per-source-stream Custom Object write configuration."
+                  }
+                },
+                "required": [
+                  "api_key",
+                  "api_version",
+                  "object",
+                  "write_mode",
+                  "streams"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Stripe API key (sk_test_... or sk_live_...)"
+                  },
+                  "base_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Override the Stripe API base URL (e.g. http://localhost:12111 for tests)"
+                  },
+                  "max_retries": {
+                    "default": 3,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Retries for 429/5xx/network errors"
+                  },
+                  "api_version": {
+                    "type": "string",
+                    "enum": [
+                      "2026-03-25.dahlia",
+                      "2026-02-25.clover",
+                      "2026-01-28.clover",
+                      "2025-12-15.clover",
+                      "2025-11-17.clover",
+                      "2025-10-29.clover",
+                      "2025-09-30.clover",
+                      "2025-08-27.basil",
+                      "2025-07-30.basil",
+                      "2025-06-30.basil",
+                      "2025-05-28.basil",
+                      "2025-04-30.basil",
+                      "2025-03-31.basil",
+                      "2025-02-24.acacia",
+                      "2025-01-27.acacia",
+                      "2024-12-18.acacia",
+                      "2024-11-20.acacia",
+                      "2024-10-28.acacia",
+                      "2024-09-30.acacia",
+                      "2024-06-20",
+                      "2024-04-10",
+                      "2024-04-03",
+                      "2023-10-16",
+                      "2023-08-16",
+                      "2022-11-15",
+                      "2022-08-01",
+                      "2020-08-27",
+                      "2020-03-02",
+                      "2019-12-03",
+                      "2019-11-05",
+                      "2019-10-17",
+                      "2019-10-08",
+                      "2019-09-09",
+                      "2019-08-14",
+                      "2019-05-16",
+                      "2019-03-14",
+                      "2019-02-19",
+                      "2019-02-11",
+                      "2018-11-08",
+                      "2018-10-31",
+                      "2018-09-24",
+                      "2018-09-06",
+                      "2018-08-23",
+                      "2018-07-27",
+                      "2018-05-21",
+                      "2018-02-28",
+                      "2018-02-06",
+                      "2018-02-05",
+                      "2018-01-23",
+                      "2017-12-14",
+                      "2017-08-15"
+                    ]
+                  },
+                  "object": {
+                    "type": "string",
+                    "const": "standard_object"
+                  },
+                  "write_mode": {
+                    "type": "string",
+                    "const": "create"
+                  },
+                  "streams": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "field_mapping": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "Mapping from Stripe create parameter names to source record fields."
+                        }
+                      },
+                      "required": [
+                        "field_mapping"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "description": "Per-source-stream standard Stripe object create configuration."
+                  }
+                },
+                "required": [
+                  "api_key",
+                  "api_version",
+                  "object",
+                  "write_mode",
+                  "streams"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        ]
+      },
       "DestinationRedisConfig": {
         "type": "object",
         "properties": {
@@ -1403,6 +1898,9 @@
                 },
                 "additionalProperties": {},
                 "description": "The record payload as a key-value map."
+              },
+              "recordDeleted": {
+                "type": "boolean"
               },
               "emitted_at": {
                 "type": "string",
@@ -1928,6 +2426,9 @@
                         "$ref": "#/components/schemas/SourceStripeConfig"
                       },
                       {
+                        "$ref": "#/components/schemas/SourcePostgresConfig"
+                      },
+                      {
                         "$ref": "#/components/schemas/SourceMetronomeConfig"
                       }
                     ]
@@ -1952,6 +2453,9 @@
                       },
                       {
                         "$ref": "#/components/schemas/DestinationGoogleSheetsConfig"
+                      },
+                      {
+                        "$ref": "#/components/schemas/DestinationStripeConfig"
                       },
                       {
                         "$ref": "#/components/schemas/DestinationRedisConfig"
@@ -2241,7 +2745,7 @@
           "run_progress",
           "request_progress"
         ],
-        "description": "Terminal message signaling end of this request."
+        "description": "Deprecated terminal message signaling end of this request. Prefer explicit request/response results via pipeline_sync_batch."
       },
       "SyncState": {
         "type": "object",
