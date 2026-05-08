@@ -53,7 +53,7 @@ function colIndexToLetter(idx: number): string {
 /** snake_case field name → "Sentence case" display label. System fields (_x) are returned as-is. */
 export function fieldToDisplay(field: string): string {
   if (field.startsWith('_')) return field
-  const words = field.split('_')
+  const words = field.split('_').map((w) => w.toLowerCase())
   words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1)
   return words.join(' ')
 }
@@ -763,10 +763,12 @@ export function buildExampleSections(
     for (let i = 5; i >= 0; i--) {
       // EDATE shifts the first-of-month by N months; negative = past
       const monthLabel = `=TEXT(EDATE(DATE(YEAR(TODAY()),MONTH(TODAY()),1),${-i}),"YYYY-MM")`
-      // Unix timestamp boundaries for each month
-      const startUnix = `(EDATE(DATE(YEAR(TODAY()),MONTH(TODAY()),1),${-i})-DATE(1970,1,1))*86400`
-      const endUnix = `(EDATE(DATE(YEAR(TODAY()),MONTH(TODAY()),1),${-(i - 1)})-DATE(1970,1,1))*86400`
-      rows.push([monthLabel, `=COUNTIFS(${createdRange},">="&${startUnix},${createdRange},"<"&${endUnix})`])
+      // COUNTIFS >=/<  only works on numbers/dates, not text strings.
+      // DATEVALUE(LEFT(cell,10)) parses the "yyyy-mm-dd" prefix of the ISO string into a Sheets date serial.
+      const start = `EDATE(DATE(YEAR(TODAY()),MONTH(TODAY()),1),${-i})`
+      const end = `EDATE(DATE(YEAR(TODAY()),MONTH(TODAY()),1),${-(i - 1)})`
+      const parsed = `IFERROR(DATEVALUE(LEFT(${createdRange},10)),0)`
+      rows.push([monthLabel, `=SUMPRODUCT((${parsed}>=${start})*(${parsed}<${end}))`])
     }
     sections.push({
       title: 'New Customers by Month',

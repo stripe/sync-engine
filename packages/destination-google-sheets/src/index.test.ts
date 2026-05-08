@@ -10,6 +10,8 @@ import {
 } from './index.js'
 import {
   applyBatch,
+  displayToField,
+  fieldToDisplay,
   MAX_CELLS_PER_SPREADSHEET,
   readEnumValidations,
   readSheet,
@@ -2048,5 +2050,50 @@ describe('enum constraints on any column', () => {
     expect(
       out.find((m) => m.type === 'connection_status' && m.connection_status.status === 'failed')
     ).toBeUndefined()
+  })
+})
+
+describe('fieldToDisplay / displayToField', () => {
+  it('roundtrip — lowercase snake_case fields survive display conversion', () => {
+    const fields = ['id', 'created_at', 'customer_id', 'object', 'invoice_item_id']
+    for (const f of fields) {
+      expect(displayToField(fieldToDisplay(f))).toBe(f)
+    }
+  })
+
+  it('fieldToDisplay — single word gets sentence case', () => {
+    expect(fieldToDisplay('id')).toBe('Id')
+    expect(fieldToDisplay('object')).toBe('Object')
+  })
+
+  it('fieldToDisplay — multi-word snake_case becomes sentence case with spaces', () => {
+    expect(fieldToDisplay('created_at')).toBe('Created at')
+    expect(fieldToDisplay('customer_id')).toBe('Customer id')
+  })
+
+  it('fieldToDisplay — uppercase in input is normalised to lowercase (no case leakage)', () => {
+    expect(fieldToDisplay('API_version')).toBe('Api version')
+    expect(fieldToDisplay('UPPER_case')).toBe('Upper case')
+  })
+
+  it('fieldToDisplay — system fields (leading underscore) are returned as-is', () => {
+    expect(fieldToDisplay('_idx')).toBe('_idx')
+    expect(fieldToDisplay('_updated_at')).toBe('_updated_at')
+  })
+
+  it('displayToField — reverses sentence case label back to snake_case', () => {
+    expect(displayToField('Created at')).toBe('created_at')
+    expect(displayToField('Customer id')).toBe('customer_id')
+    expect(displayToField('Id')).toBe('id')
+  })
+
+  it('displayToField — system fields (leading underscore) are returned as-is', () => {
+    expect(displayToField('_idx')).toBe('_idx')
+    expect(displayToField('_updated_at')).toBe('_updated_at')
+  })
+
+  it('displayToField — idempotent on already-snake_case strings', () => {
+    expect(displayToField('customer_id')).toBe('customer_id')
+    expect(displayToField('id')).toBe('id')
   })
 })
