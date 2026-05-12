@@ -99,7 +99,8 @@ export class MetronomeClient {
     method: 'GET' | 'POST',
     path: string,
     body?: Record<string, unknown>,
-    startCursor?: string | null
+    startCursor?: string | null,
+    options?: { skipLimit?: boolean }
   ): AsyncGenerator<MetronomePageResponse<T>> {
     let nextPage: string | undefined = startCursor ?? undefined
 
@@ -113,8 +114,8 @@ export class MetronomeClient {
       } else {
         const reqBody: Record<string, unknown> = {
           ...(body ?? {}),
-          limit: PAGE_SIZE,
         }
+        if (!options?.skipLimit) reqBody['limit'] = PAGE_SIZE
         if (nextPage) reqBody['next_page'] = nextPage
         page = await this.post<MetronomePageResponse<T>>(path, reqBody)
       }

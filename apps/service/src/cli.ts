@@ -8,8 +8,10 @@ import { createPrettyFormatter } from './cli/pretty-output.js'
 import { serve } from '@hono/node-server'
 import { createConnectorResolver, startApiServer, type ApiServerHandle } from '@stripe/sync-engine'
 import sourceStripe from '@stripe/sync-source-stripe'
+import sourceMetronome from '@stripe/sync-source-metronome'
 import sourcePostgres from '@stripe/sync-source-postgres'
 import destinationPostgres from '@stripe/sync-destination-postgres'
+import destinationRedis from '@stripe/sync-destination-redis'
 import destinationSqlite from '@stripe/sync-destination-sqlite'
 import destinationGoogleSheets from '@stripe/sync-destination-google-sheets'
 import destinationStripe from '@stripe/sync-destination-stripe'
@@ -29,9 +31,10 @@ import { log } from './logger.js'
 const defaultDataDir = process.env.DATA_DIR ?? `${homedir()}/.stripe-sync`
 
 const resolverPromise = createConnectorResolver({
-  sources: { stripe: sourceStripe, postgres: sourcePostgres },
+  sources: { stripe: sourceStripe, metronome: sourceMetronome, postgres: sourcePostgres },
   destinations: {
     postgres: destinationPostgres,
+    redis: destinationRedis,
     sqlite: destinationSqlite,
     google_sheets: destinationGoogleSheets,
     stripe: destinationStripe,

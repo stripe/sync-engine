@@ -2,7 +2,7 @@
 # End-to-end test: Metronome → source-metronome → destination-redis
 #
 # Proves the full pipeline works with real data:
-#   1. Backfill credit grants + entitlements to Redis
+#   1. Backfill net_balance + entitlements to Redis
 #   2. Start webhook listener
 #   3. Simulate customer usage (send events to Metronome ingest API)
 #   4. Fire a webhook event → source re-fetches → Redis updates
@@ -18,8 +18,8 @@ set -euo pipefail
 
 : "${METRONOME_API_TOKEN:?Set METRONOME_API_TOKEN}"
 
-CUSTOMER_ID="1a6de34e-ec68-46b0-a1c3-bb3d49f66bb3"
-GRANT_ID="30ec9faa-3c5d-4cea-9e2a-b44a4e4446bd"
+CUSTOMER_ID="${CUSTOMER_ID:?Set CUSTOMER_ID env var}"
+CREDIT_TYPE_ID="${CREDIT_TYPE_ID:?Set CREDIT_TYPE_ID env var}"
 REDIS_PORT=56379
 WEBHOOK_PORT=4243
 KEY_PREFIX="sync:"
@@ -35,7 +35,7 @@ fi
 
 redis-cli -p "$REDIS_PORT" FLUSHDB >/dev/null
 
-CATALOG='{"streams":[{"stream":{"name":"credit_grants","primary_key":[["id"]],"newer_than_field":"_synced_at","json_schema":{}},"sync_mode":"full_refresh","destination_sync_mode":"append_dedup"},{"stream":{"name":"entitlements","primary_key":[["customer_id"],["contract_id"],["product_id"]],"newer_than_field":"_synced_at","json_schema":{}},"sync_mode":"full_refresh","destination_sync_mode":"append_dedup"}]}'
+CATALOG='{"streams":[{"stream":{"name":"net_balance","primary_key":[["customer_id"],["credit_type_id"]],"newer_than_field":"_synced_at","json_schema":{}},"sync_mode":"full_refresh","destination_sync_mode":"append_dedup"},{"stream":{"name":"entitlements","primary_key":[["customer_id"],["contract_id"],["product_id"]],"newer_than_field":"_synced_at","json_schema":{}},"sync_mode":"full_refresh","destination_sync_mode":"append_dedup"}]}'
 SOURCE_CONFIG="{\"api_key\": \"$METRONOME_API_TOKEN\", \"webhook_port\": $WEBHOOK_PORT}"
 DEST_CONFIG="{\"url\":\"redis://localhost:$REDIS_PORT\",\"key_prefix\":\"$KEY_PREFIX\",\"batch_size\":1}"
 
@@ -54,10 +54,10 @@ echo ""
 
 # Step 2: Check initial state
 echo "Step 2: Initial Redis state after backfill:"
-BALANCE_BEFORE=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}credit_grants:$GRANT_ID" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['balance']['including_pending'])")
-SYNCED_BEFORE=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}credit_grants:$GRANT_ID" | python3 -c "import sys,json; print(json.load(sys.stdin)['_synced_at'])")
-echo "  Credit balance: $BALANCE_BEFORE"
-echo "  Synced at:      $SYNCED_BEFORE"
+BALANCE_BEFORE=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}net_balance:$CUSTOMER_ID:$CREDIT_TYPE_ID" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['balance'])")
+SYNCED_BEFORE=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}net_balance:$CUSTOMER_ID:$CREDIT_TYPE_ID" | python3 -c "import sys,json; print(json.load(sys.stdin)['_synced_at'])")
+echo "  Net balance: $BALANCE_BEFORE"
+echo "  Synced at:   $SYNCED_BEFORE"
 echo ""
 
 # Step 3: Simulate customer usage
@@ -91,17 +91,17 @@ echo ""
 
 # Step 5: Verify Redis updated
 echo "Step 5: Redis state after webhook refresh:"
-BALANCE_AFTER=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}credit_grants:$GRANT_ID" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['balance']['including_pending'])")
-SYNCED_AFTER=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}credit_grants:$GRANT_ID" | python3 -c "import sys,json; print(json.load(sys.stdin)['_synced_at'])")
-echo "  Credit balance: $BALANCE_AFTER"
-echo "  Synced at:      $SYNCED_AFTER"
+BALANCE_AFTER=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}net_balance:$CUSTOMER_ID:$CREDIT_TYPE_ID" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['balance'])")
+SYNCED_AFTER=$(redis-cli -p "$REDIS_PORT" GET "${KEY_PREFIX}net_balance:$CUSTOMER_ID:$CREDIT_TYPE_ID" | python3 -c "import sys,json; print(json.load(sys.stdin)['_synced_at'])")
+echo "  Net balance: $BALANCE_AFTER"
+echo "  Synced at:   $SYNCED_AFTER"
 echo ""
 
 # Step 6: Verify timestamp changed (proves webhook triggered a re-fetch)
 if [ "$SYNCED_AFTER" -gt "$SYNCED_BEFORE" ]; then
-  echo "✓ SUCCESS: Redis was updated by webhook (synced_at $SYNCED_BEFORE → $SYNCED_AFTER)"
+  echo "SUCCESS: Redis was updated by webhook (synced_at $SYNCED_BEFORE → $SYNCED_AFTER)"
 else
-  echo "✗ FAIL: Redis was NOT updated by webhook"
+  echo "FAIL: Redis was NOT updated by webhook"
   exit 1
 fi
 
