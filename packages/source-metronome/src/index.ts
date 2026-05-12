@@ -34,13 +34,8 @@ function buildCatalog(): CatalogPayload {
   }
 }
 
-/** Event types that affect credit balances or entitlements */
-const ENTITLEMENT_EVENT_TYPES = new Set([
-  'contract.create',
-  'contract.start',
-  'contract.edit',
-  'contract.end',
-  'contract.archive',
+/** Event types that affect credit/commit balances */
+const BALANCE_EVENT_TYPES = new Set([
   'commit.create',
   'commit.edit',
   'commit.segment.start',
@@ -51,10 +46,20 @@ const ENTITLEMENT_EVENT_TYPES = new Set([
   'credit.segment.end',
 ])
 
+/** Event types that affect contract entitlements */
+const ENTITLEMENT_EVENT_TYPES = new Set([
+  'contract.create',
+  'contract.start',
+  'contract.edit',
+  'contract.end',
+  'contract.archive',
+])
+
+/** All webhook event types we handle */
+const WEBHOOK_EVENT_TYPES = new Set([...BALANCE_EVENT_TYPES, ...ENTITLEMENT_EVENT_TYPES])
+
 /**
  * On a webhook event, re-fetch affected data from Metronome and yield updated records.
- * For credit events: re-fetch credit grants for the customer.
- * For contract events: re-fetch entitlements (rate schedule) for the customer's contracts.
  */
 async function* processWebhookEvent(
   event: MetronomeWebhookEvent,
@@ -74,23 +79,21 @@ async function* processWebhookEvent(
 
   const now = Math.floor(Date.now() / 1000)
 
-  // Re-fetch credit grants for this customer
-  if (configuredStreamNames.has('credit_grants')) {
-    for await (const page of client.paginate('POST', '/v1/credits/listGrants', {
-      customer_ids: [customerId],
-    })) {
-      for (const grant of page.data) {
-        yield msg.record({
-          stream: 'credit_grants',
-          data: { ...(grant as Record<string, unknown>), _synced_at: now },
-          emitted_at: new Date().toISOString(),
-        })
-      }
-    }
+  // Re-fetch net balance only for balance-affecting events
+  if (configuredStreamNames.has('net_balance') && BALANCE_EVENT_TYPES.has(event.type)) {
+    const result = await client.post<{ data: Record<string, unknown> }>(
+      '/v1/contracts/customerBalances/getNetBalance',
+      { customer_id: customerId }
+    )
+    yield msg.record({
+      stream: 'net_balance',
+      data: { ...result.data, customer_id: customerId, _synced_at: now },
+      emitted_at: new Date().toISOString(),
+    })
   }
 
-  // Re-fetch entitlements (rate schedules) for this customer's contracts
-  if (configuredStreamNames.has('entitlements')) {
+  // Re-fetch entitlements only for contract-affecting events
+  if (configuredStreamNames.has('entitlements') && ENTITLEMENT_EVENT_TYPES.has(event.type)) {
     const contractId = event.contract_id ?? (event.properties?.contract_id as string | undefined)
     const contractIds: string[] = []
 
@@ -261,24 +264,46 @@ const source: Source<Config, StreamState> = {
           // Per-customer: iterate customers
           const custIds = await ensureCustomerIds()
 
-          outer: for (const customerId of custIds) {
-            for await (const page of client.paginate(resource.method, resource.endpoint, {
-              customer_id: customerId,
-            })) {
-              for (const record of page.data) {
-                const data = {
-                  ...(record as Record<string, unknown>),
-                  _synced_at: Math.floor(Date.now() / 1000),
-                }
-                yield msg.record({
-                  stream: streamName,
-                  data,
-                  emitted_at: new Date().toISOString(),
-                })
-                recordCount++
-                if (config.backfill_limit && recordCount >= config.backfill_limit) break outer
+          if (resource.singleObject) {
+            // Endpoint returns a single object, not a paginated list
+            outer_single: for (const customerId of custIds) {
+              const result = await client.post<{ data: Record<string, unknown> }>(
+                resource.endpoint,
+                { customer_id: customerId }
+              )
+              const data = {
+                ...result.data,
+                customer_id: customerId,
+                _synced_at: Math.floor(Date.now() / 1000),
               }
-              if (config.backfill_limit && recordCount >= config.backfill_limit) break
+              yield msg.record({
+                stream: streamName,
+                data,
+                emitted_at: new Date().toISOString(),
+              })
+              recordCount++
+              if (config.backfill_limit && recordCount >= config.backfill_limit) break outer_single
+            }
+          } else {
+            outer: for (const customerId of custIds) {
+              for await (const page of client.paginate(resource.method, resource.endpoint, {
+                customer_id: customerId,
+              }, undefined, { skipLimit: resource.skipLimit })) {
+                for (const record of page.data) {
+                  const data = {
+                    ...(record as Record<string, unknown>),
+                    _synced_at: Math.floor(Date.now() / 1000),
+                  }
+                  yield msg.record({
+                    stream: streamName,
+                    data,
+                    emitted_at: new Date().toISOString(),
+                  })
+                  recordCount++
+                  if (config.backfill_limit && recordCount >= config.backfill_limit) break outer
+                }
+                if (config.backfill_limit && recordCount >= config.backfill_limit) break
+              }
             }
           }
         } else {
@@ -286,7 +311,8 @@ const source: Source<Config, StreamState> = {
             resource.method,
             resource.endpoint,
             undefined,
-            startCursor
+            startCursor,
+            { skipLimit: resource.skipLimit }
           )) {
             for (const record of page.data) {
               const data = {
@@ -341,8 +367,8 @@ const source: Source<Config, StreamState> = {
       let waiter: ((item: QueueItem) => void) | null = null
 
       const server = startWebhookServer(config.webhook_port, config.webhook_secret, (input) => {
-        if (!ENTITLEMENT_EVENT_TYPES.has(input.event.type)) {
-          log.debug({ eventType: input.event.type }, 'metronome: ignoring non-entitlement event')
+        if (!WEBHOOK_EVENT_TYPES.has(input.event.type)) {
+          log.debug({ eventType: input.event.type }, 'metronome: ignoring unhandled event type')
           return
         }
         const { promise, resolve } = Promise.withResolvers<void>()
@@ -372,10 +398,10 @@ const source: Source<Config, StreamState> = {
           try {
             yield* processWebhookEvent(item.event, client, configuredStreamNames)
             // Emit state checkpoint so destination flushes immediately
-            if (configuredStreamNames.has('credit_grants')) {
+            if (configuredStreamNames.has('net_balance')) {
               yield msg.source_state({
                 state_type: 'stream',
-                stream: 'credit_grants',
+                stream: 'net_balance',
                 data: { next_page: null },
               })
             }

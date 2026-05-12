@@ -65,6 +65,31 @@ importers:
         specifier: ^7.1.11
         version: 7.2.2(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
+  apps/cache-sidecar:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1
+        version: 1.19.11(hono@4.12.8)
+      hono:
+        specifier: ^4
+        version: 4.12.8
+      ioredis:
+        specifier: ^5
+        version: 5.10.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.1
+      tsx:
+        specifier: ^4
+        version: 4.21.0
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
   apps/dashboard:
     dependencies:
       '@radix-ui/react-accordion':
@@ -164,9 +189,15 @@ importers:
       '@stripe/sync-destination-postgres':
         specifier: workspace:*
         version: link:../../packages/destination-postgres
+      '@stripe/sync-destination-redis':
+        specifier: workspace:*
+        version: link:../../packages/destination-redis
       '@stripe/sync-destination-sqlite':
         specifier: workspace:*
         version: link:../../packages/destination-sqlite
+      '@stripe/sync-destination-stripe':
+        specifier: workspace:*
+        version: link:../../packages/destination-stripe
       '@stripe/sync-hono-zod-openapi':
         specifier: workspace:*
         version: link:../../packages/hono-zod-openapi
@@ -176,6 +207,12 @@ importers:
       '@stripe/sync-protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@stripe/sync-source-metronome':
+        specifier: workspace:*
+        version: link:../../packages/source-metronome
+      '@stripe/sync-source-postgres':
+        specifier: workspace:*
+        version: link:../../packages/source-postgres
       '@stripe/sync-source-stripe':
         specifier: workspace:*
         version: link:../../packages/source-stripe
@@ -252,9 +289,15 @@ importers:
       '@stripe/sync-destination-postgres':
         specifier: workspace:*
         version: link:../../packages/destination-postgres
+      '@stripe/sync-destination-redis':
+        specifier: workspace:*
+        version: link:../../packages/destination-redis
       '@stripe/sync-destination-sqlite':
         specifier: workspace:*
         version: link:../../packages/destination-sqlite
+      '@stripe/sync-destination-stripe':
+        specifier: workspace:*
+        version: link:../../packages/destination-stripe
       '@stripe/sync-engine':
         specifier: workspace:*
         version: link:../engine
@@ -267,6 +310,12 @@ importers:
       '@stripe/sync-protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@stripe/sync-source-metronome':
+        specifier: workspace:*
+        version: link:../../packages/source-metronome
+      '@stripe/sync-source-postgres':
+        specifier: workspace:*
+        version: link:../../packages/source-postgres
       '@stripe/sync-source-stripe':
         specifier: workspace:*
         version: link:../../packages/source-stripe
@@ -436,6 +485,9 @@ importers:
       '@stripe/sync-destination-postgres':
         specifier: workspace:*
         version: link:../packages/destination-postgres
+      '@stripe/sync-destination-stripe':
+        specifier: workspace:*
+        version: link:../packages/destination-stripe
       '@stripe/sync-engine':
         specifier: workspace:*
         version: link:../apps/engine
@@ -448,6 +500,9 @@ importers:
       '@stripe/sync-service':
         specifier: workspace:*
         version: link:../apps/service
+      '@stripe/sync-source-postgres':
+        specifier: workspace:*
+        version: link:../packages/source-postgres
       '@stripe/sync-source-stripe':
         specifier: workspace:*
         version: link:../packages/source-stripe
@@ -535,6 +590,28 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
+  packages/destination-redis:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      ioredis:
+        specifier: ^5.6.1
+        version: 5.10.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.5.0
+        version: 24.10.1
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
   packages/destination-sqlite:
     dependencies:
       '@stripe/sync-logger':
@@ -546,6 +623,28 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+
+  packages/destination-stripe:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-openapi':
+        specifier: workspace:*
+        version: link:../openapi
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.1
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
   packages/hono-zod-openapi:
     dependencies:
@@ -625,6 +724,50 @@ importers:
       vitest:
         specifier: ^3.2.1
         version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
+  packages/source-metronome:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.5.0
+        version: 24.10.1
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
+  packages/source-postgres:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@stripe/sync-util-postgres':
+        specifier: workspace:*
+        version: link:../util-postgres
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.20.0
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
   packages/source-stripe:
     dependencies:
@@ -1408,6 +1551,9 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [win32]
+
+  '@ioredis/commands@1.5.1':
+    resolution: {integrity: sha512-JH8ZL/ywcJyR9MmJ5BNqZllXNZQqQbnVZOqpPQqE1vHiFgAw4NHbvE0FOduNU8IX9babitBT46571OnPTT0Zcw==}
 
   '@isaacs/balanced-match@4.0.1':
     resolution: {integrity: sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ==}
@@ -3023,6 +3169,10 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
+    engines: {node: '>=0.10.0'}
+
   code-excerpt@4.0.0:
     resolution: {integrity: sha512-xxodCmBen3iy2i0WtAK8FlFNrRzjUqjRsMfho58xT/wvZU1YTM3fCnRjcy1gJPMepaRlgm/0e6w8SpWHpn3/cA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -3133,6 +3283,10 @@ packages:
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
+
+  denque@2.1.0:
+    resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
+    engines: {node: '>=0.10'}
 
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
@@ -3600,6 +3754,10 @@ packages:
       react-devtools-core:
         optional: true
 
+  ioredis@5.10.1:
+    resolution: {integrity: sha512-HuEDBTI70aYdx1v6U97SbNx9F1+svQKBDo30o0b9fw055LMepzpOOd0Ccg9Q6tbqmBSJaMuY0fB7yw9/vjBYCA==}
+    engines: {node: '>=12.22.0'}
+
   is-extglob@2.1.1:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
     engines: {node: '>=0.10.0'}
@@ -3800,6 +3958,12 @@ packages:
 
   lodash.camelcase@4.3.0:
     resolution: {integrity: sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==}
+
+  lodash.defaults@4.2.0:
+    resolution: {integrity: sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==}
+
+  lodash.isarguments@3.1.0:
+    resolution: {integrity: sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==}
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
@@ -4243,6 +4407,14 @@ packages:
     resolution: {integrity: sha512-57frrGM/OCTLqLOAh0mhVA9VBMHd+9U7Zb2THMGdBUoZVOtGbJzjxsYGDJ3A9AYYCP4hn6y1TVbaOfzWtm5GFg==}
     engines: {node: '>= 12.13.0'}
 
+  redis-errors@1.2.0:
+    resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
+    engines: {node: '>=4'}
+
+  redis-parser@3.0.0:
+    resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
+    engines: {node: '>=4'}
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -4397,6 +4569,9 @@ packages:
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
+
+  standard-as-callback@2.1.0:
+    resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
 
   std-env@3.9.0:
     resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
@@ -4679,6 +4854,7 @@ packages:
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   vite-node@3.2.4:
@@ -5860,6 +6036,8 @@ snapshots:
 
   '@img/sharp-win32-x64@0.34.5':
     optional: true
+
+  '@ioredis/commands@1.5.1': {}
 
   '@isaacs/balanced-match@4.0.1': {}
 
@@ -7279,6 +7457,14 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
+  '@vitest/mocker@3.2.4(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
   '@vitest/mocker@3.2.4(vite@7.2.2(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -7611,6 +7797,8 @@ snapshots:
 
   clsx@2.1.1: {}
 
+  cluster-key-slot@1.1.2: {}
+
   code-excerpt@4.0.0:
     dependencies:
       convert-to-spaces: 2.0.1
@@ -7697,6 +7885,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   delayed-stream@1.0.0: {}
+
+  denque@2.1.0: {}
 
   detect-libc@2.1.2: {}
 
@@ -8231,6 +8421,20 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  ioredis@5.10.1:
+    dependencies:
+      '@ioredis/commands': 1.5.1
+      cluster-key-slot: 1.1.2
+      debug: 4.4.3(supports-color@10.2.2)
+      denque: 2.1.0
+      lodash.defaults: 4.2.0
+      lodash.isarguments: 3.1.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   is-extglob@2.1.1: {}
 
   is-fullwidth-code-point@3.0.0: {}
@@ -8384,6 +8588,10 @@ snapshots:
       p-locate: 5.0.0
 
   lodash.camelcase@4.3.0: {}
+
+  lodash.defaults@4.2.0: {}
+
+  lodash.isarguments@3.1.0: {}
 
   lodash.merge@4.6.2: {}
 
@@ -8805,6 +9013,12 @@ snapshots:
 
   real-require@0.2.0: {}
 
+  redis-errors@1.2.0: {}
+
+  redis-parser@3.0.0:
+    dependencies:
+      redis-errors: 1.2.0
+
   require-directory@2.1.1: {}
 
   require-from-string@2.0.2: {}
@@ -9017,6 +9231,8 @@ snapshots:
       escape-string-regexp: 2.0.0
 
   stackback@0.0.2: {}
+
+  standard-as-callback@2.1.0: {}
 
   std-env@3.9.0: {}
 
@@ -9341,7 +9557,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.2(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.2(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4

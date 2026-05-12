@@ -13,6 +13,10 @@ export interface ResourceDefinition {
   perCustomer?: boolean
   /** If true, requires iterating parent customers AND their contracts */
   perContract?: boolean
+  /** If true, endpoint returns a single object (not a paginated list) */
+  singleObject?: boolean
+  /** If true, do not send `limit` in pagination requests */
+  skipLimit?: boolean
 }
 
 export const resources: ResourceDefinition[] = [
@@ -112,6 +116,7 @@ export const resources: ResourceDefinition[] = [
     endpoint: '/v1/contract-pricing/rate-cards/list',
     method: 'POST',
     primaryKey: [['id']],
+    skipLimit: true,
     jsonSchema: {
       type: 'object',
       properties: {
@@ -124,44 +129,18 @@ export const resources: ResourceDefinition[] = [
     },
   },
   {
-    name: 'credit_grants',
-    endpoint: '/v1/credits/listGrants',
+    name: 'net_balance',
+    endpoint: '/v1/contracts/customerBalances/getNetBalance',
     method: 'POST',
-    primaryKey: [['id']],
+    primaryKey: [['customer_id'], ['credit_type_id']],
+    perCustomer: true,
+    singleObject: true,
     jsonSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string' },
-        name: { type: 'string' },
         customer_id: { type: 'string' },
-        reason: { type: ['string', 'null'] },
-        effective_at: { type: 'string' },
-        expires_at: { type: ['string', 'null'] },
-        priority: { type: 'number' },
-        credit_grant_type: { type: ['string', 'null'] },
-        balance: { type: 'object' },
-        custom_fields: { type: 'object' },
-        _synced_at: { type: 'integer' },
-      },
-    },
-  },
-  {
-    name: 'invoices',
-    endpoint: '/v1/invoices',
-    method: 'GET',
-    primaryKey: [['id']],
-    jsonSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        customer_id: { type: 'string' },
-        status: { type: 'string' },
-        total: { type: 'number' },
-        credit_type: { type: 'object' },
-        start_timestamp: { type: 'string' },
-        end_timestamp: { type: 'string' },
-        line_items: { type: 'array' },
-        custom_fields: { type: 'object' },
+        balance: { type: 'number' },
+        credit_type_id: { type: 'string' },
         _synced_at: { type: 'integer' },
       },
     },
