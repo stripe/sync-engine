@@ -108,6 +108,7 @@ export const EXCLUDED_TABLES = new Set([
  */
 const LIST_EXTRA_QUERY_PARAMS: Record<string, Record<string, string>> = {
   subscription: { status: 'all' },
+  subscription_schedule: { scope: 'all' },
 }
 
 export function buildResourceRegistry(
