@@ -131,6 +131,11 @@ describe('isSkippableError', () => {
       'Accounts v2 is not enabled for your livemode merchant acct_1NIFdXLd02PKGbD5. Please visit https://docs.stripe.com/connect/use-accounts-as-customers to enable Accounts v2. [GET /v2/core/accounts (400)] {request-id=req_v2yowYQ7yMNDkuvFi, stripe-should-retry=false}',
       true,
     ],
+    [
+      'climate_order',
+      'This account is not eligible for Climate Orders. [GET /v1/climate/orders (400)]',
+      true,
+    ],
     ['unrecognized error', 'Something went wrong', false],
     ['non-StripeApiRequestError', null, false],
   ])('%s', (_label, message, expected) => {

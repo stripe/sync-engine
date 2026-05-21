@@ -157,6 +157,11 @@ const SKIPPABLE_ERROR_MESSAGES = [
   //  https://dashboard.stripe.com/identity to get started.
   //  [GET /v1/identity/verification_reports (400)]"
   'Your account is not set up to use Identity',
+
+  // climate_order
+  // "This account is not eligible for Climate Orders.
+  //  [GET /v1/climate/orders (400)]"
+  'This account is not eligible for Climate Orders',
 ]
 
 export function isSkippableError(err: unknown): boolean {
