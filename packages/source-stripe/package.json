@@ -37,12 +37,12 @@
     "@stripe/sync-protocol": "workspace:*",
     "https-proxy-agent": "^7.0.6",
     "undici": "^7.16.0",
-    "ws": "^8.18.0",
+    "ws": "^8.20.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^24.5.0",
     "@types/ws": "^8.18.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.0"
   }
 }
