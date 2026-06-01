@@ -34,7 +34,7 @@
     "@stripe/sync-protocol": "workspace:*",
     "@types/node": "^24.5.0",
     "@types/react": "^19",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.0"
   },
   "files": [
     "src",
