@@ -61,7 +61,7 @@
     "openapi-typescript": "^7",
     "pg": "^8",
     "stripe": "^21.0.1",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.0"
   },
   "repository": {
     "type": "git",
