@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^24",
-    "vitest": "^3.2"
+    "vitest": "^4.1"
   },
   "files": [
     "src",

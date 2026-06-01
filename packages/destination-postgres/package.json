@@ -44,6 +44,6 @@
     "@aws-sdk/client-sts": "^3.1013.0",
     "@aws-sdk/rds-signer": "^3.1013.0",
     "@types/pg": "^8.15.5",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.0"
   }
 }
