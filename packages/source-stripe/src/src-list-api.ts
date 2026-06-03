@@ -162,6 +162,16 @@ const SKIPPABLE_ERROR_MESSAGES = [
   // "This account is not eligible for Climate Orders.
   //  [GET /v1/climate/orders (400)]"
   'This account is not eligible for Climate Orders',
+
+  // billing_alerts
+  // "Your custom plan does not include alerts in livemode.
+  //  [GET /v1/billing/alerts (400)]"
+  'does not include alerts in livemode',
+
+  // billing_credit_grants
+  // "Your custom plan does not include billing credit grants in livemode.
+  //  [GET /v1/billing/credit_grants (400)]"
+  'does not include billing credit grants in livemode',
 ]
 
 export function isSkippableError(err: unknown): boolean {
@@ -536,7 +546,7 @@ async function* iterateStream(opts: {
           supportsForwardPagination,
         }),
       //concurrency: 100, // rate limiter is the real bottleneck
-      concurrency: 1, // serialized for reliability; parallelism re-enabled if data gaps are due to parallelism 
+      concurrency: 1, // serialized for reliability; parallelism re-enabled if data gaps are due to parallelism
       subdivisionFactor,
     })
 

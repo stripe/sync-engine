@@ -916,6 +916,18 @@ describe('StripeSource', () => {
         '/v1/sigma/scheduled_query_runs',
         'API surface is not enabled',
       ],
+      [
+        'billing_alerts',
+        'Your custom plan does not include alerts in livemode.',
+        '/v1/billing/alerts',
+        'does not include alerts in livemode',
+      ],
+      [
+        'billing_credit_grants',
+        'Your custom plan does not include billing credit grants in livemode.',
+        '/v1/billing/credit_grants',
+        'does not include billing credit grants in livemode',
+      ],
     ])(
       'emits stream_status skip for known skippable Stripe list errors (%s)',
       async (_label, apiMessage, path, reasonSubstring) => {
