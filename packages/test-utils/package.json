@@ -30,6 +30,6 @@
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.5",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.6"
   }
 }

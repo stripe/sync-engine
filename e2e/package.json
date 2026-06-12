@@ -23,7 +23,7 @@
     "googleapis": "^144",
     "pg": "^8.16.0",
     "stripe": "^17.7.0",
-    "vitest": "^3.2.1"
+    "vitest": "^3.2.6"
   },
   "dependencies": {
     "openapi-fetch": "^0.17.0"

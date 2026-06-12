@@ -75,7 +75,7 @@
     "@types/pg": "^8.15.4",
     "@types/react": "19.2.14",
     "openapi-typescript": "^7.13.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.6"
   },
   "repository": {
     "type": "git",
