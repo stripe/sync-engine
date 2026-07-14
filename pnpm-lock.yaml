@@ -164,9 +164,15 @@ importers:
       '@stripe/sync-destination-postgres':
         specifier: workspace:*
         version: link:../../packages/destination-postgres
+      '@stripe/sync-destination-redis':
+        specifier: workspace:*
+        version: link:../../packages/destination-redis
       '@stripe/sync-destination-sqlite':
         specifier: workspace:*
         version: link:../../packages/destination-sqlite
+      '@stripe/sync-destination-stripe':
+        specifier: workspace:*
+        version: link:../../packages/destination-stripe
       '@stripe/sync-hono-zod-openapi':
         specifier: workspace:*
         version: link:../../packages/hono-zod-openapi
@@ -176,6 +182,12 @@ importers:
       '@stripe/sync-protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@stripe/sync-source-metronome':
+        specifier: workspace:*
+        version: link:../../packages/source-metronome
+      '@stripe/sync-source-postgres':
+        specifier: workspace:*
+        version: link:../../packages/source-postgres
       '@stripe/sync-source-stripe':
         specifier: workspace:*
         version: link:../../packages/source-stripe
@@ -255,6 +267,9 @@ importers:
       '@stripe/sync-destination-sqlite':
         specifier: workspace:*
         version: link:../../packages/destination-sqlite
+      '@stripe/sync-destination-stripe':
+        specifier: workspace:*
+        version: link:../../packages/destination-stripe
       '@stripe/sync-engine':
         specifier: workspace:*
         version: link:../engine
@@ -267,6 +282,9 @@ importers:
       '@stripe/sync-protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@stripe/sync-source-postgres':
+        specifier: workspace:*
+        version: link:../../packages/source-postgres
       '@stripe/sync-source-stripe':
         specifier: workspace:*
         version: link:../../packages/source-stripe
@@ -436,6 +454,9 @@ importers:
       '@stripe/sync-destination-postgres':
         specifier: workspace:*
         version: link:../packages/destination-postgres
+      '@stripe/sync-destination-stripe':
+        specifier: workspace:*
+        version: link:../packages/destination-stripe
       '@stripe/sync-engine':
         specifier: workspace:*
         version: link:../apps/engine
@@ -448,6 +469,9 @@ importers:
       '@stripe/sync-service':
         specifier: workspace:*
         version: link:../apps/service
+      '@stripe/sync-source-postgres':
+        specifier: workspace:*
+        version: link:../packages/source-postgres
       '@stripe/sync-source-stripe':
         specifier: workspace:*
         version: link:../packages/source-stripe
@@ -535,6 +559,28 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
+  packages/destination-redis:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      ioredis:
+        specifier: ^5.6.1
+        version: 5.11.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.5.0
+        version: 24.10.1
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
   packages/destination-sqlite:
     dependencies:
       '@stripe/sync-logger':
@@ -546,6 +592,28 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+
+  packages/destination-stripe:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-openapi':
+        specifier: workspace:*
+        version: link:../openapi
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.1
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
   packages/hono-zod-openapi:
     dependencies:
@@ -625,6 +693,50 @@ importers:
       vitest:
         specifier: ^3.2.1
         version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
+  packages/source-metronome:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.5.0
+        version: 24.10.1
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
+
+  packages/source-postgres:
+    dependencies:
+      '@stripe/sync-logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@stripe/sync-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@stripe/sync-util-postgres':
+        specifier: workspace:*
+        version: link:../util-postgres
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.20.0
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.1)
 
   packages/source-stripe:
     dependencies:
@@ -1408,6 +1520,9 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [win32]
+
+  '@ioredis/commands@1.10.0':
+    resolution: {integrity: sha512-UmeW7z4LfctwoQ5wkhVzgq8tXkreED2xZGpX+Bg+zA+WJFZCT6c062AfCK/Dfk81xZnnwdhJCUMkitihRaoC2Q==}
 
   '@isaacs/balanced-match@4.0.1':
     resolution: {integrity: sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ==}
@@ -3023,6 +3138,10 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
+  cluster-key-slot@1.1.1:
+    resolution: {integrity: sha512-rwHwUfXL40Chm1r08yrhU3qpUvdVlgkKNeyeGPOxnW8/SyVDvgRaed/Uz54AqWNaTCAThlj6QAs3TZcKI0xDEw==}
+    engines: {node: '>=0.10.0'}
+
   code-excerpt@4.0.0:
     resolution: {integrity: sha512-xxodCmBen3iy2i0WtAK8FlFNrRzjUqjRsMfho58xT/wvZU1YTM3fCnRjcy1gJPMepaRlgm/0e6w8SpWHpn3/cA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -3133,6 +3252,10 @@ packages:
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
+
+  denque@2.1.0:
+    resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
+    engines: {node: '>=0.10'}
 
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
@@ -3599,6 +3722,10 @@ packages:
         optional: true
       react-devtools-core:
         optional: true
+
+  ioredis@5.11.1:
+    resolution: {integrity: sha512-ehuGcf94bQXhfagULNXrJdfnWO38v070jxSx/qE87Kjzmu2fU7ro5EFAb+OPituLqgfyuQaym5DlrNydW2sJ9A==}
+    engines: {node: '>=12.22.0'}
 
   is-extglob@2.1.1:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
@@ -4243,6 +4370,14 @@ packages:
     resolution: {integrity: sha512-57frrGM/OCTLqLOAh0mhVA9VBMHd+9U7Zb2THMGdBUoZVOtGbJzjxsYGDJ3A9AYYCP4hn6y1TVbaOfzWtm5GFg==}
     engines: {node: '>= 12.13.0'}
 
+  redis-errors@1.2.0:
+    resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
+    engines: {node: '>=4'}
+
+  redis-parser@3.0.0:
+    resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
+    engines: {node: '>=4'}
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -4397,6 +4532,9 @@ packages:
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
+
+  standard-as-callback@2.1.0:
+    resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
 
   std-env@3.9.0:
     resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
@@ -5860,6 +5998,8 @@ snapshots:
 
   '@img/sharp-win32-x64@0.34.5':
     optional: true
+
+  '@ioredis/commands@1.10.0': {}
 
   '@isaacs/balanced-match@4.0.1': {}
 
@@ -7611,6 +7751,8 @@ snapshots:
 
   clsx@2.1.1: {}
 
+  cluster-key-slot@1.1.1: {}
+
   code-excerpt@4.0.0:
     dependencies:
       convert-to-spaces: 2.0.1
@@ -7697,6 +7839,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   delayed-stream@1.0.0: {}
+
+  denque@2.1.0: {}
 
   detect-libc@2.1.2: {}
 
@@ -8230,6 +8374,18 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  ioredis@5.11.1:
+    dependencies:
+      '@ioredis/commands': 1.10.0
+      cluster-key-slot: 1.1.1
+      debug: 4.4.3(supports-color@10.2.2)
+      denque: 2.1.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
 
   is-extglob@2.1.1: {}
 
@@ -8805,6 +8961,12 @@ snapshots:
 
   real-require@0.2.0: {}
 
+  redis-errors@1.2.0: {}
+
+  redis-parser@3.0.0:
+    dependencies:
+      redis-errors: 1.2.0
+
   require-directory@2.1.1: {}
 
   require-from-string@2.0.2: {}
@@ -9017,6 +9179,8 @@ snapshots:
       escape-string-regexp: 2.0.0
 
   stackback@0.0.2: {}
+
+  standard-as-callback@2.1.0: {}
 
   std-env@3.9.0: {}
 
