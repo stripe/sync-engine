@@ -131,7 +131,7 @@ describe('pipelineWorkflow (unit — stubbed activities)', () => {
     })
   })
 
-  it('processes stripe_event signals as optimistic updates', async () => {
+  it('processes source_input signals as optimistic updates', async () => {
     const syncCalls: { pipelineId: string; input?: SourceInput[] }[] = []
 
     const worker = await Worker.create({

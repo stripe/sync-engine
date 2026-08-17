@@ -2,6 +2,7 @@ import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest'
 import type { WorkflowClient } from '@temporalio/client'
 import { TestWorkflowEnvironment } from '@temporalio/testing'
 import { Worker } from '@temporalio/worker'
+import { createHmac } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import path from 'node:path'
@@ -774,5 +775,140 @@ describe('pipeline CRUD', () => {
 
     // Cleanup
     await a.request(`/pipelines/${created.id}`, { method: 'DELETE' })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Webhook ingress
+// ---------------------------------------------------------------------------
+
+describe('POST /webhooks/{pipeline_id}', () => {
+  const webhookSecret = 'whsec_test_secret'
+
+  function signPayload(
+    payload: string,
+    secret = webhookSecret,
+    timestamp = Math.floor(Date.now() / 1000)
+  ) {
+    const signature = createHmac('sha256', secret).update(`${timestamp}.${payload}`).digest('hex')
+    return `t=${timestamp},v1=${signature}`
+  }
+
+  function stripeEventPayload(overrides: Record<string, unknown> = {}) {
+    return JSON.stringify({
+      id: 'evt_test_1',
+      object: 'event',
+      api_version: '2025-03-31.basil',
+      created: Math.floor(Date.now() / 1000),
+      data: { object: { id: 'cus_test_1', object: 'customer' } },
+      livemode: false,
+      pending_webhooks: 0,
+      request: { id: null, idempotency_key: null },
+      type: 'customer.created',
+      ...overrides,
+    })
+  }
+
+  // Unlike mockTemporalClient() above, keeps a stable `signal` mock across
+  // getHandle() calls so assertions can target it directly.
+  function mockTemporalClientWithHandle() {
+    const signal = vi.fn(async () => undefined)
+    const client = {
+      start: vi.fn(async () => undefined),
+      getHandle: vi.fn(() => ({
+        signal,
+        query: vi.fn(async () => ({})),
+        terminate: vi.fn(async () => undefined),
+      })),
+      list: vi.fn(async function* () {}),
+    } as unknown as WorkflowClient
+    return { client, signal }
+  }
+
+  async function seedStripePipeline(pipelineStore: PipelineStore, id: string) {
+    await pipelineStore.set(id, {
+      id,
+      source: {
+        type: 'stripe',
+        stripe: {
+          api_key: 'sk_test_123',
+          api_version: '2025-03-31.basil',
+          webhook_secret: webhookSecret,
+        },
+      },
+      destination: { type: 'test', test: {} },
+      desired_status: 'active',
+      status: 'ready',
+    } as Pipeline)
+  }
+
+  it('signals the workflow with source_input on a validly signed event', async () => {
+    const pipelineStore = memoryPipelineStore()
+    await seedStripePipeline(pipelineStore, 'pipe_webhook_1')
+    const { client: temporalClient, signal } = mockTemporalClientWithHandle()
+    const webhookApp = createApp({
+      temporal: { client: temporalClient, taskQueue: 'test-webhooks' },
+      resolver,
+      pipelineStore,
+    })
+
+    const payload = stripeEventPayload()
+    const res = await webhookApp.request('/webhooks/pipe_webhook_1', {
+      method: 'POST',
+      headers: { 'stripe-signature': signPayload(payload) },
+      body: payload,
+    })
+
+    expect(res.status).toBe(200)
+    // This is the regression this test guards against: the route used to signal
+    // 'stripe_event', which the workflow has no handler for, so events were
+    // silently dropped even though Stripe saw a 200.
+    expect(signal).toHaveBeenCalledWith('source_input', {
+      type: 'source_input',
+      source_input: expect.objectContaining({ id: 'evt_test_1', type: 'customer.created' }),
+    })
+  })
+
+  it('rejects an incorrectly signed event without signaling the workflow', async () => {
+    const pipelineStore = memoryPipelineStore()
+    await seedStripePipeline(pipelineStore, 'pipe_webhook_2')
+    const { client: temporalClient, signal } = mockTemporalClientWithHandle()
+    const webhookApp = createApp({
+      temporal: { client: temporalClient, taskQueue: 'test-webhooks' },
+      resolver,
+      pipelineStore,
+    })
+
+    const payload = stripeEventPayload()
+    const res = await webhookApp.request('/webhooks/pipe_webhook_2', {
+      method: 'POST',
+      headers: { 'stripe-signature': signPayload(payload, 'whsec_wrong_secret') },
+      body: payload,
+    })
+
+    expect(res.status).toBe(401)
+    expect(signal).not.toHaveBeenCalled()
+  })
+
+  it('returns a non-2xx response when the workflow signal fails, so Stripe retries', async () => {
+    const pipelineStore = memoryPipelineStore()
+    await seedStripePipeline(pipelineStore, 'pipe_webhook_3')
+    const { client: temporalClient, signal } = mockTemporalClientWithHandle()
+    signal.mockRejectedValueOnce(new Error('workflow not found'))
+    const webhookApp = createApp({
+      temporal: { client: temporalClient, taskQueue: 'test-webhooks' },
+      resolver,
+      pipelineStore,
+    })
+
+    const payload = stripeEventPayload()
+    const res = await webhookApp.request('/webhooks/pipe_webhook_3', {
+      method: 'POST',
+      headers: { 'stripe-signature': signPayload(payload) },
+      body: payload,
+    })
+
+    expect(res.status).toBeGreaterThanOrEqual(500)
+    expect(signal).toHaveBeenCalledOnce()
   })
 })
