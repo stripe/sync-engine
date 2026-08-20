@@ -33,6 +33,18 @@ function isDeleteEvent(event: StripeEvent): boolean {
   return RESOURCE_DELETE_EVENTS.has(event.type)
 }
 
+/**
+ * Stripe sets `event.account` to the connected account an event actually
+ * came from (docs.stripe.com/connect/webhooks). Each pipeline handles only
+ * one account, so if `event.account` is set and doesn't match, the event
+ * belongs to a different account and must not be saved here. If either
+ * value is missing there's nothing to compare, so the event is let through
+ * because there's no evidence it belongs to any other account.
+ */
+function eventBelongsToAccount(event: StripeEvent, accountId?: string): boolean {
+  return !accountId || !event.account || event.account === accountId
+}
+
 // MARK: - fromStripeEvent
 
 /**
@@ -57,6 +69,7 @@ export function fromStripeEvent(
     | { id?: string; object?: string; deleted?: boolean; [key: string]: unknown }
     | undefined
   if (!dataObject?.object) return null
+  if (!eventBelongsToAccount(event, accountId)) return null
 
   const objectType = normalizeStripeObjectName(dataObject.object)
   const config = registry[objectType]
@@ -114,6 +127,19 @@ export async function* processStripeEvent(
     | { id?: string; object?: string; deleted?: boolean; [key: string]: unknown }
     | undefined
   if (!dataObject?.object) return
+
+  if (!eventBelongsToAccount(event, accountId)) {
+    log.warn(
+      {
+        eventId: event.id,
+        eventType: event.type,
+        pipelineAccountId: accountId,
+        eventAccountId: event.account,
+      },
+      "Skipping webhook event: event.account does not match this pipeline's account"
+    )
+    return
+  }
 
   const newerThanField = (streamName: string) =>
     catalog.streams.find((cs) => cs.stream.name === streamName)!.stream.newer_than_field
