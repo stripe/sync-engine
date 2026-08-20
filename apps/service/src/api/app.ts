@@ -10,6 +10,7 @@ import {
   emptySyncState,
   EofPayload as EofPayloadSchema,
   SyncState,
+  type SourceInputMessage,
 } from '@stripe/sync-protocol'
 
 const engineMsg = createEngineMessageFactory()
@@ -972,8 +973,9 @@ export function createApp(options: AppOptions) {
       // Verify webhook signature
       const body = await c.req.text()
       const signature = c.req.header('stripe-signature') ?? ''
+      let event: ReturnType<typeof verifyWebhookSignature>
       try {
-        const event = verifyWebhookSignature(body, signature, webhookSecret)
+        event = verifyWebhookSignature(body, signature, webhookSecret)
         log.info(
           { eventId: event.id, eventType: event.type, pipeline_id },
           'webhook event ingested'
@@ -990,10 +992,15 @@ export function createApp(options: AppOptions) {
         return c.text('temporal is not configured', 503)
       }
 
-      temporal
-        .getHandle(pipeline_id)
-        .signal('stripe_event', { body, headers: Object.fromEntries(c.req.raw.headers.entries()) })
-        .catch(() => {})
+      // Must match the signal name/payload the workflow actually handles
+      // (sourceInputSignal in temporal/workflows/_shared.ts), or events are silently dropped.
+      const message: SourceInputMessage = { type: 'source_input', source_input: event }
+      try {
+        await temporal.getHandle(pipeline_id).signal('source_input', message)
+      } catch (err) {
+        log.error({ err, eventId: event.id, pipeline_id }, 'failed to signal pipeline workflow')
+        return c.text('failed to enqueue webhook event for processing', 502)
+      }
       return c.text('ok', 200)
     }
   )
