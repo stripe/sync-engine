@@ -100,6 +100,17 @@ export const EXCLUDED_TABLES = new Set([
   'billing_credit_balance_transaction',
 ])
 
+/**
+ * Per-table extra query parameters to pass on every list call.
+ * Some Stripe list endpoints filter results unless an explicit status is sent.
+ * For example, /v1/subscriptions excludes canceled subscriptions by default,
+ * so the initial backfill misses them entirely (issue #336).
+ */
+const LIST_EXTRA_QUERY_PARAMS: Record<string, Record<string, string>> = {
+  subscription: { status: 'all' },
+  subscription_schedule: { scope: 'all' },
+}
+
 export function buildResourceRegistry(
   spec: OpenApiSpec,
   apiKey: string,
@@ -130,7 +141,14 @@ export function buildResourceRegistry(
         supportsPagination: n.supportsPagination,
       }))
 
-    const rawListFn = buildListFn(apiKey, endpoint.apiPath, apiFetch, apiVersion, baseUrl)
+    const rawListFn = buildListFn(
+      apiKey,
+      endpoint.apiPath,
+      apiFetch,
+      apiVersion,
+      baseUrl,
+      LIST_EXTRA_QUERY_PARAMS[tableName]
+    )
     const rawRetrieveFn = buildRetrieveFn(apiKey, endpoint.apiPath, apiFetch, apiVersion, baseUrl)
 
     const config: ResourceConfig = {
