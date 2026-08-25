@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
-import spec, { configSchema, streamStateSpec } from './spec.js'
+import spec, { configSchema, stripeEventSchema, streamStateSpec } from './spec.js'
 import { BUNDLED_API_VERSION, SUPPORTED_API_VERSIONS } from '@stripe/sync-openapi'
 
 describe('configSchema api_version field', () => {
@@ -68,5 +68,52 @@ describe('streamStateSpec JSON Schema round-trip', () => {
       ],
     }
     expect(zodFromJson.safeParse(stateInProgress).success).toBe(true)
+  })
+})
+
+describe('stripeEventSchema', () => {
+  it('accepts request as a plain string (older API versions)', () => {
+    const event = {
+      id: 'evt_test',
+      object: 'event',
+      api_version: '2020-08-27',
+      created: 1234567890,
+      data: { object: {} },
+      livemode: false,
+      pending_webhooks: 0,
+      request: 'req_xxxxx',
+      type: 'charge.created',
+    }
+    expect(stripeEventSchema.safeParse(event).success).toBe(true)
+  })
+
+  it('accepts request as an object (modern API versions)', () => {
+    const event = {
+      id: 'evt_test',
+      object: 'event',
+      api_version: '2020-08-27',
+      created: 1234567890,
+      data: { object: {} },
+      livemode: false,
+      pending_webhooks: 0,
+      request: { id: 'req_xxxxx', idempotency_key: null },
+      type: 'charge.created',
+    }
+    expect(stripeEventSchema.safeParse(event).success).toBe(true)
+  })
+
+  it('accepts request as null', () => {
+    const event = {
+      id: 'evt_test',
+      object: 'event',
+      api_version: '2020-08-27',
+      created: 1234567890,
+      data: { object: {} },
+      livemode: false,
+      pending_webhooks: 0,
+      request: null,
+      type: 'charge.created',
+    }
+    expect(stripeEventSchema.safeParse(event).success).toBe(true)
   })
 })
