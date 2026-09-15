@@ -1,6 +1,74 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OpenApiSpec } from '@stripe/sync-openapi'
 import { buildResourceRegistry } from './resourceRegistry.js'
+
+const subscriptionSpec: OpenApiSpec = {
+  openapi: '3.0.0',
+  paths: {
+    '/v1/subscriptions': {
+      get: {
+        parameters: [{ name: 'limit', in: 'query' }],
+        responses: {
+          '200': {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    object: { type: 'string', enum: ['list'] },
+                    data: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/subscription' },
+                    },
+                    has_more: { type: 'boolean' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/v1/subscription_schedules': {
+      get: {
+        parameters: [{ name: 'limit', in: 'query' }],
+        responses: {
+          '200': {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    object: { type: 'string', enum: ['list'] },
+                    data: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/subscription_schedule' },
+                    },
+                    has_more: { type: 'boolean' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  components: {
+    schemas: {
+      subscription: {
+        'x-resourceId': 'subscription',
+        type: 'object',
+        properties: { id: { type: 'string' } },
+      },
+      subscription_schedule: {
+        'x-resourceId': 'subscription_schedule',
+        type: 'object',
+        properties: { id: { type: 'string' } },
+      },
+    },
+  },
+}
 
 const v2CreatedSpec: OpenApiSpec = {
   openapi: '3.0.0',
@@ -94,5 +162,39 @@ describe('buildResourceRegistry', () => {
 
     expect(registry.v2_core_account?.supportsCreatedFilter).toBe(false)
     expect(registry.v2_core_event?.supportsCreatedFilter).toBe(true)
+  })
+
+  describe('list extra query params (issue #336)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('passes status=all when listing subscriptions so canceled rows are included', async () => {
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ data: [], has_more: false }), { status: 200 })
+        )
+
+      const registry = buildResourceRegistry(subscriptionSpec, 'sk_test_fake', '2026-03-25.dahlia')
+      await registry.subscription!.listFn!({ limit: 10 })
+
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+      expect(new URL(url).searchParams.get('status')).toBe('all')
+    })
+
+    it('passes scope=all when listing subscription schedules so canceled rows are included', async () => {
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ data: [], has_more: false }), { status: 200 })
+        )
+
+      const registry = buildResourceRegistry(subscriptionSpec, 'sk_test_fake', '2026-03-25.dahlia')
+      await registry.subscription_schedule!.listFn!({ limit: 10 })
+
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+      expect(new URL(url).searchParams.get('scope')).toBe('all')
+    })
   })
 })

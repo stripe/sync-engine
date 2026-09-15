@@ -148,7 +148,8 @@ export function buildListFn(
   apiPath: string,
   fetch: typeof globalThis.fetch,
   apiVersion: string,
-  baseUrl?: string
+  baseUrl?: string,
+  extraQueryParams?: Record<string, string>
 ): ListFn {
   const base = baseUrl ?? DEFAULT_STRIPE_API_BASE
 
@@ -161,6 +162,9 @@ export function buildListFn(
         for (const [op, val] of Object.entries(params.created)) {
           if (val != null) qs.set(`created[${op}]`, toV2CreatedParam(val))
         }
+      }
+      if (extraQueryParams) {
+        for (const [k, v] of Object.entries(extraQueryParams)) qs.set(k, v)
       }
 
       const headers = authHeaders(apiKey)
@@ -192,6 +196,9 @@ export function buildListFn(
       for (const [op, val] of Object.entries(params.created)) {
         if (val != null) qs.set(`created[${op}]`, String(val))
       }
+    }
+    if (extraQueryParams) {
+      for (const [k, v] of Object.entries(extraQueryParams)) qs.set(k, v)
     }
 
     const headers = authHeaders(apiKey)

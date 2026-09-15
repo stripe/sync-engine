@@ -230,6 +230,40 @@ describe('buildListFn / buildRetrieveFn', () => {
     expect(parsed.searchParams.get('created[lt]')).toBe('2025-01-02T00:00:00.000Z')
   })
 
+  it('appends extraQueryParams to v1 list calls', async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ data: [], has_more: false }), { status: 200 })
+    )
+    const list = buildListFn(
+      'sk_test_fake',
+      '/v1/subscriptions',
+      fetchMock,
+      '2024-06-20',
+      undefined,
+      { status: 'all' }
+    )
+    await list({ limit: 1 })
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(new URL(url).searchParams.get('status')).toBe('all')
+  })
+
+  it('appends extraQueryParams to v2 list calls', async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ data: [], next_page_url: null }), { status: 200 })
+    )
+    const list = buildListFn(
+      'sk_test_fake',
+      '/v2/core/events',
+      fetchMock,
+      '2024-06-20',
+      undefined,
+      { foo: 'bar' }
+    )
+    await list({ limit: 1 })
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(new URL(url).searchParams.get('foo')).toBe('bar')
+  })
+
   it('throws the Stripe error message for non-2xx retrieve responses', async () => {
     const fetchMock = vi.fn(
       async () =>
