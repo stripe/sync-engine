@@ -113,10 +113,13 @@ export const stripeEventSchema = z.object({
       "Number of webhooks that haven't been successfully delivered (for example, to return a 20x response) to the URLs you specify."
     ),
   request: z
-    .object({
-      id: z.string().nullable(),
-      idempotency_key: z.string().nullable(),
-    })
+    .union([
+      z.string(),
+      z.object({
+        id: z.string().nullable(),
+        idempotency_key: z.string().nullable(),
+      }),
+    ])
     .nullable()
     .describe('Information on the API request that triggers the event.'),
   type: z
