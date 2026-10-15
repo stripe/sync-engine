@@ -219,10 +219,10 @@ export async function* processStripeEvent(
   let data: Record<string, unknown> = dataObject
   if (
     config.revalidate_objects?.some((r) => normalizeStripeObjectName(r) === objectType) &&
-    resourceConfig.isFinalState &&
-    !resourceConfig.isFinalState(dataObject)
+    resourceConfig.retrieveFn &&
+    !(resourceConfig.isFinalState?.(dataObject) ?? false)
   ) {
-    data = (await resourceConfig.retrieveFn!(dataObject.id)) as Record<string, unknown>
+    data = (await resourceConfig.retrieveFn(dataObject.id)) as Record<string, unknown>
   }
 
   // 6. Yield main record

@@ -95,4 +95,53 @@ describe('buildResourceRegistry', () => {
     expect(registry.v2_core_account?.supportsCreatedFilter).toBe(false)
     expect(registry.v2_core_event?.supportsCreatedFilter).toBe(true)
   })
+
+  it('provides retrieveFn but no final-state predicate for ordinary subscription resources', () => {
+    const subscriptionSpec: OpenApiSpec = {
+      openapi: '3.0.0',
+      info: { version: '2026-03-25.dahlia' },
+      paths: {
+        '/v1/subscriptions': {
+          get: {
+            parameters: [{ name: 'limit', in: 'query' }],
+            responses: {
+              '200': {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        object: { type: 'string', enum: ['list'] },
+                        data: {
+                          type: 'array',
+                          items: { $ref: '#/components/schemas/subscription' },
+                        },
+                        has_more: { type: 'boolean' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          subscription: {
+            'x-resourceId': 'subscription',
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              status: { type: 'string' },
+            },
+          },
+        },
+      },
+    }
+
+    const registry = buildResourceRegistry(subscriptionSpec, 'sk_test_fake', '2026-03-25.dahlia')
+    expect(registry.subscription?.retrieveFn).toBeTypeOf('function')
+    expect(registry.subscription?.isFinalState).toBeUndefined()
+  })
 })

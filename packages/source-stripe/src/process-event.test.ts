@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Message, RecordMessage } from '@stripe/sync-protocol'
 import type { StripeEvent } from './spec.js'
 import type { Config } from './index.js'
@@ -94,6 +94,43 @@ describe('Connect account guard', () => {
       )
 
       expect(messages).toHaveLength(0)
+    })
+
+    it('re-fetches configured objects when the registry has no final-state predicate', async () => {
+      const retrieveFn = vi.fn(async () => ({
+        id: 'sub_1',
+        object: 'subscription',
+        status: 'active',
+        verification_source: 'stripe-retrieve',
+      }))
+      const registry: Record<string, ResourceConfig> = {
+        subscription: makeConfig({
+          order: 1,
+          tableName: 'subscription',
+          retrieveFn: retrieveFn as ResourceConfig['retrieveFn'],
+          // Deliberately no isFinalState: matches the default registry's shape.
+        }),
+      }
+      const event = makeEvent({
+        type: 'customer.subscription.updated',
+        dataObject: { id: 'sub_1', object: 'subscription', status: 'active' },
+      })
+
+      const messages = await collect(
+        processStripeEvent(
+          event,
+          { ...config, revalidate_objects: ['subscription'] },
+          catalog({ name: 'subscription' }),
+          registry,
+          new Set(['subscription'])
+        )
+      )
+
+      expect(retrieveFn).toHaveBeenCalledWith('sub_1')
+      const records = messages.filter((m): m is RecordMessage => m.type === 'record')
+      expect(records[0].record.data).toMatchObject({
+        verification_source: 'stripe-retrieve',
+      })
     })
 
     it('processes the event when event.account matches the pipeline account', async () => {
