@@ -8,11 +8,10 @@ import {
   workflowInfo,
 } from '@temporalio/workflow'
 
-import type { SourceInputMessage, SyncState } from '@stripe/sync-protocol'
+import type { EofPayload, SourceInputMessage, SyncState } from '@stripe/sync-protocol'
 import { emptySyncState } from '@stripe/sync-protocol'
 import type { PipelineStatus } from '../../lib/createSchemas.js'
-import {
-  pausedSignal,
+import {  pausedSignal,
   pipelineSetup,
   sourceInputSignal,
   pipelineSync,
@@ -23,12 +22,25 @@ import { pipelineBackfill } from './pipeline-backfill.js'
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const LIVE_EVENT_BATCH_SIZE = 10
+const LIVE_BATCH_RETRY_BASE_MS = 1_000
+const LIVE_BATCH_RETRY_MAX_MS = 5 * 60 * 1000
 const PIPELINE_CONTINUE_AS_NEW_THRESHOLD = 1000
+
+function liveBatchFailed(eof: EofPayload): boolean {
+  if (eof.status === 'failed') return true
+  return Object.values(eof.run_progress.streams).some((stream) => stream.status === 'errored')
+}
+
+function liveBatchRetryDelayMs(consecutiveFailures: number): number {
+  return Math.min(
+    LIVE_BATCH_RETRY_BASE_MS * 2 ** (consecutiveFailures - 1),
+    LIVE_BATCH_RETRY_MAX_MS
+  )
+}
 
 export interface PipelineWorkflowState {
   setupComplete?: boolean
-  backfilling?: boolean
-  backfillCount: number
+  backfilling?: boolean  backfillCount: number
   teardown?: boolean
 }
 
@@ -91,15 +103,28 @@ export async function pipelineWorkflow(
   }
 
   async function liveLoop(): Promise<void> {
+    let consecutiveFailures = 0
+
     while (true) {
       const events = await waitForLiveEvents()
       if (!events) return
 
-      await pipelineSync(pipelineId, { input: events, run_id: workflowInfo().runId })
+      const { eof } = await pipelineSync(pipelineId, {
+        input: events,
+        run_id: workflowInfo().runId,
+      })
       operationCount++
+
+      if (liveBatchFailed(eof)) {
+        inputQueue.unshift(...events)
+        consecutiveFailures++
+        await condition(() => runInterrupted(), liveBatchRetryDelayMs(consecutiveFailures))
+        continue
+      }
+
+      consecutiveFailures = 0
     }
   }
-
   // MARK: - Backfill (child workflow)
 
   async function runBackfill(workflowId: string): Promise<void> {
