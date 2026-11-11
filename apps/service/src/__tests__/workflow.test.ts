@@ -17,6 +17,7 @@ const emptyState = {
 }
 
 const successEof = {
+  status: 'succeeded' as const,
   has_more: false,
   ending_state: emptyState,
   run_progress: {
@@ -275,6 +276,64 @@ describe('pipelineWorkflow (unit — stubbed activities)', () => {
 
       expect(liveBatchCount).toBeGreaterThanOrEqual(1)
       expect(liveEventCount).toBe(12)
+    })
+  })
+
+  it.each([
+    { id: 'failed-status', eof: { ...successEof, status: 'failed' as const } },
+    {
+      id: 'errored-stream',
+      eof: {
+        ...successEof,
+        status: 'started' as const,
+        run_progress: {
+          ...successEof.run_progress,
+          streams: {
+            customers: {
+              status: 'errored' as const,
+              state_count: 0,
+              record_count: 0,
+              message: 'flush failed',
+            },
+          },
+        },
+      },
+    },
+  ])('retries a live batch when the first attempt reports $id', async ({ id, eof: failedEof }) => {
+    const liveBatches: SourceInput[][] = []
+    const taskQueue = `test-queue-live-retry-${id}`
+
+    const worker = await Worker.create({
+      connection: testEnv.nativeConnection,
+      taskQueue,
+      workflowsPath,
+      activities: stubActivities({
+        pipelineSync: async (_pipelineId: string, opts?) => {
+          if (!opts?.input) return { eof: successEof }
+
+          liveBatches.push(opts.input)
+          return { eof: liveBatches.length === 1 ? failedEof : successEof }
+        },
+      }),
+    })
+
+    await worker.runUntil(async () => {
+      const handle = await testEnv.client.workflow.start('pipelineWorkflow', {
+        args: [testPipelineId],
+        workflowId: `test-sync-live-retry-${id}`,
+        taskQueue,
+      })
+
+      await new Promise((r) => setTimeout(r, 1500))
+      await signalSourceInput(handle, { id: 'evt_1', type: 'customer.created' })
+
+      await new Promise((r) => setTimeout(r, 4000))
+      await cancelWorkflow(handle)
+      await handle.result()
+
+      expect(liveBatches.length).toBeGreaterThanOrEqual(2)
+      expect(liveBatches[0]).toEqual([expect.objectContaining({ id: 'evt_1' })])
+      expect(liveBatches[1]).toEqual([expect.objectContaining({ id: 'evt_1' })])
     })
   })
 
