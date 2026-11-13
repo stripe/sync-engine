@@ -94,7 +94,7 @@ See [docs/architecture/principles.md](docs/architecture/principles.md) for the c
 - **No build step for local dev** — the sync CLI uses `--conditions bun --import tsx` so it reads `.ts` source directly. Edits to workspace packages propagate immediately. `pnpm build` is only needed for vitest (which resolves `dist/`) and Docker.
 - **Do NOT add `injectWorkspacePackages: true`** to `pnpm-workspace.yaml` — it copies files into the pnpm store as hardlinks, which break silently when editors save (write-temp-then-rename). Without it, pnpm uses symlinks and edits always propagate. Docker builds use `pnpm deploy --legacy` instead.
 - `tsx` fails on `apps/supabase` — `?raw` imports pull in Deno-only code. Other packages work fine with `npx tsx`.
-- `packages/sync-engine/src/supabase` is Deno, not Node. Don't run those files with Node/tsx.
+- `apps/supabase/src/edge-functions` is Deno, not Node. Don't run those files with Node/tsx.
 - E2E tests need Stripe keys with **write** permissions (they create real objects).
 - The npm-bundled `esbuild` binary is blocked by Santa (endpoint security). Set `ESBUILD_BINARY_PATH` to the Homebrew-installed binary: `source scripts/prefer-system-esbuild.sh` or add it to your `.envrc`. `apps/supabase/build.mjs` auto-detects the system binary, but tools like `vite` and `tsx` need the env var set in the shell.
 
